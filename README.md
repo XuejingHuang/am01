@@ -18,7 +18,7 @@ tags: []
 - Computing & Tech is male intensive
 
 Industry Proportions: For both men and women Law is the industry with the highest salary levels. In addition, individuals working in law have the highest education levels. 
-
+Can mention EDA results are supported by t.tests
 
 3. Education has a impact on salary levels. There is also a gender gap within the respondents who have higher education levels. 
 There are different gaps in salary at differnt education levels. Highschool is the highest and then Professional Degree is the lowest. As education levels increase the salary gap gets lower, however there is a spike with PhDs.
