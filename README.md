@@ -17,6 +17,9 @@ tags: []
 - Art & Design has a gender gap where women earn on average $10,000 more.
 - Computing & Tech is male intensive
 
+Industry Proportions: For both men and women Law is the industry with the highest salary levels. In addition, individuals working in law have the highest education levels. 
+
+
 3. Education has a impact on salary levels. There is also a gender gap within the respondents who have higher education levels. 
 There are different gaps in salary at differnt education levels. Highschool is the highest and then Professional Degree is the lowest. As education levels increase the salary gap gets lower, however there is a spike with PhDs.
 5. Field experience is also important in explaining salary
