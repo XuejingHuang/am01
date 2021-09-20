@@ -12,7 +12,7 @@ tags: []
 ## Executive Summary
 
 Dataset Limitations:
-  Althought the sample size of this data set is XXX, we had to keep into account that it is not a random sample. Since it is sourced from the blog and website askyourmanager.com, the respondents are already in theory predisposed to fit some sort of group. For example, since they are on this website, most have a job already and are probably educated. 
+  Althought the sample size of this data set is	26765, it is important to take into account that it is not a random sample. Since it is sourced from the  website askyourmanager.com, the respondents are already predisposed to fit some sort of group. For example, most respondents have a job already and more than half have recieved a college education or above. That being said, here are the key takeaways of our analysis on the askamanager salary survey.
 
 #Key Takeaways:
   1. Gender and Salary: Overall there is a statistically significant salary gap between men and woman in the dataset. We got to this conclusion by plotting the data, running a T.Test, calculating a confidence interval, and than testing our results through bootstraping. 
