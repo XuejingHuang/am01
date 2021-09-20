@@ -482,11 +482,12 @@ ask_a_manager_2021 %>%
       plot.title = element_text(size=11)
     ) +
     theme_wsj() +
-    theme(axis.title=element_text(size=12))+
-    ggtitle("Salary Vs. Race Boxplot with Jitter") +
-    ylab("Salary") + xlab ("Race") + 
+    theme(legend.position = "none")+
+    theme(axis.title=element_text(size=10))+
+    ggtitle("Salary Vs. Race Boxplot") +
+    ylab("Salary") + xlab ("Race") +
     scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-    scale_y_continuous(labels = scales::comma, limits = c(0, 1000000)) +
+    scale_y_continuous(labels = scales::comma, limits = c(0, 300000)) +
     NULL
   
 ```
@@ -507,7 +508,7 @@ t.test(salary ~ race, data = ask_a_manager_2021_race)
 When running a T-test on the two racial groups, White and Black or African American, the P-value we get is 0.9. Thus there is no statistically signifcant difference in their annual salary when calculating it based of off this data set. 
 ### Race and Mean Salary 
 
-```{r}
+```{r, echo=FALSE}
 # Remove from presentation
 ask_a_manager_2021 %>% 
   group_by(race) %>% 
@@ -644,7 +645,7 @@ ask_a_manager_2021 %>%
     ggtitle("Salary Vs. Gender Boxplot with Jitter") +
     ylab("Salary") + xlab ("Race") + 
     scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-    scale_y_continuous(labels = scales::comma) +
+    scale_y_continuous(labels = scales::comma, limits = c(0, 1000000)) +
     NULL
   
 ```
