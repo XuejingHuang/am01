@@ -243,6 +243,7 @@ ask_a_manager_2021 %>%
   arrange(desc(percent))
 
 ```
+
 #make comments about the counts 
 
 
