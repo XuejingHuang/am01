@@ -889,14 +889,14 @@ colnames(ask_a_manager_2021)
 ```{r}
 reg_data <- ask_a_manager_2021 %>% 
   mutate(country = ifelse(country=="US","US","Non-US"))
-
+meanmodel <- lm(converted_salary ~ 1, data=reg_data)
 m1 <- lm(converted_salary ~ education, data=reg_data)
 m2 <- lm(converted_salary ~ education + age_group, data=reg_data)
 m3 <- lm(converted_salary ~ education + gender, data=reg_data)
 m4 <- lm(converted_salary ~ education + age_group + gender + pro_exp + field_exp, data=reg_data)
 m5 <- lm(converted_salary ~ education + age_group + gender + field_exp, data=reg_data)
 
-huxreg(m1, m2, m3, m4, m5,
+huxreg(meanmodel, m1, m2, m3, m4, m5,
        statistics = c('#observations' = 'nobs', 
                       'R squared' = 'r.squared', 
                       'Adj. R Squared' = 'adj.r.squared', 
