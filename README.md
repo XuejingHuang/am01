@@ -26,6 +26,6 @@ There are different gaps in salary at differnt education levels. Highschool is t
 6. Changing industry leads to a lower salary on average. In order to get a higher salary one must stay in their industry for a long time.
 
 
-
+Regression & Results on Test data:
 
 
