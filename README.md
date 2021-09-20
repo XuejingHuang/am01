@@ -25,6 +25,8 @@ There are different gaps in salary at differnt education levels. Highschool is t
 5. Field experience is also important in explaining salary
 6. Changing industry leads to a lower salary on average. In order to get a higher salary one must stay in their industry for a long time.
 
+Explain stuff using t.tests and models
+
 
 Regression & Results on Test data:
 
