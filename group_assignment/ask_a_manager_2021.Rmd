@@ -98,8 +98,8 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
     age_group = factor(how_old_are_you,levels=c("under 18","18-24","25-34","35-44","45-54","55-64","65 or over")),
     field_exp = factor(years_of_experience_in_field,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")),
     pro_exp = factor(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")),
-    education = factor(highest_level_of_education_completed, labels=c("High School","Some college","College degree","Master's degree","Professional degree", "PhD")),
-    higher_edu = ifelse(education %in% c("College degree","Master's degree", "PhD", "Professional degree"),1,0),
+    education = factor(highest_level_of_education_completed, levels=c("High School","Some college","College degree","Master's degree","Professional degree (MD, JD, etc.)", "PhD")),
+    higher_edu = ifelse(education %in% c("College degree","Master's degree", "PhD", "Professional degree (MD, JD, etc.)"),1,0),
     salary = annual_salary,
     log_salary = log(annual_salary)
   ) %>% 
@@ -213,6 +213,11 @@ ask_a_manager_2021 %>%
   mutate(percent = 100* n/sum(n))%>% 
   arrange(desc(percent))
 
+ask_a_manager_2021 %>% 
+  count(field_exp) %>% 
+  mutate(percent = 100* n/sum(n))%>% 
+  arrange(desc(percent))
+
 # gender
 ask_a_manager_2021 %>% 
   count(gender) %>% 
@@ -238,6 +243,8 @@ ask_a_manager_2021 %>%
   arrange(desc(percent))
 
 ```
+#make comments about the counts 
+
 
 ## Salary (Yuan)
 
@@ -245,7 +252,7 @@ How is salary distributed?
 
 ```{r}
 
-favstats(ask_a_manager_2021$salary) # find a really rich guy here
+favstats(ask_a_manager_2021$converted_salary) # find a really rich guy here
 
 # density
 g1 <- ggplot(ask_a_manager_2021, aes(x=salary))+
@@ -507,7 +514,7 @@ t.test(salary ~ race, data = ask_a_manager_2021_race)
 When running a T-test on the two racial groups, White and Black or African American, the P-value we get is 0.9. Thus there is no statistically signifcant difference in their annual salary when calculating it based of off this data set. 
 ### Race and Mean Salary 
 
-```{r}
+```{r echo=FALSE}
 # Remove from presentation
 ask_a_manager_2021 %>% 
   group_by(race) %>% 
@@ -520,10 +527,6 @@ ask_a_manager_2021 %>%
        x = "Race",
        y = " ")+
   NULL
-```
-
-```{r}
-
 ```
 
 ## Location (Alex)
@@ -556,7 +559,6 @@ plot_usmap(data=statesalarymap, values="mean_salary", color="black") + scale_fil
 
 ```
 
-> MAP
 
 ```{r}
 # Count by Industry
@@ -619,6 +621,7 @@ ask_a_manager_age %>%
   #geom_line(aes( x = age_group, y=mean_salary_by_age, gender="Male"  ),colour="blue",size=2)
   NULL
 ```
+As we can see, the gender pay gap gets larger the older indiviudals get. In addition men and women start off at similar pays.
 
 # Statistical Tests
 
@@ -667,6 +670,7 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
   filter(gender!="Non-binary")
 t.test(converted_salary ~ gender, data = ask_a_manager_2021)
 ```
+
 
 ### Confidence Intervals 
 
@@ -731,9 +735,9 @@ We want to look at the relationship between one's gender and education degree. I
 
 ask_a_manager_2021_education <- ask_a_manager_2021 %>% 
    filter(gender !="Non-binary") %>%
-   mutate(high_school = if_else(highest_level_of_education_completed == "High School", "Yes", "No")) %>% 
-   group_by(gender) %>% 
-   summarise(college_below=sum(high_school == "Yes"), college_or_above = sum(high_school == "No"))
+   mutate(high_school = if_else(highest_level_of_education_completed == "High School", "Yes", "No")) 
+   # group_by(gender) %>% 
+   # summarise(college_below=sum(high_school == "Yes"), college_or_above = sum(high_school == "No"))
 
 ask_a_manager_2021_education
 
