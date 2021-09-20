@@ -197,15 +197,15 @@ ask_a_manager_2021 %>%
   geom_bar(stat="identity") + labs(title = "Age distribution of Ask a Manager survey respondents",                                                 x="Age group",
                   y="Frequency",                                                  caption = "Source:Askamanager.com")
 
-# 'country' 
+# 'country'
 ask_a_manager_2021 %>%
-  count(country, sort=TRUE) %>% 
-  mutate(percent = 100* n/sum(n))
+  count(country, sort=TRUE) %>%
+  mutate(percent = 100* n/sum(n)) %>% head()
 
-# 'city' 
-ask_a_manager_2021 %>% 
-  count(city, sort=TRUE) %>% 
-  mutate(percent = 100* n/sum(n))
+# 'city'
+ask_a_manager_2021 %>%
+  count(city, sort=TRUE) %>%
+  mutate(percent = 100* n/sum(n)) %>% head()
 
 # education 
 ask_a_manager_2021 %>% 
@@ -223,7 +223,7 @@ ask_a_manager_2021 %>%
 ask_a_manager_2021 %>% 
   count(race) %>% 
   mutate(percent = 100* n/sum(n))%>% 
-  arrange(desc(percent))
+  arrange(desc(percent)) %>%  head()
 
 # pro_exp 
 ask_a_manager_2021 %>% 
@@ -898,6 +898,8 @@ huxreg(m1, m2, m3, m4, m5,
        stars = NULL
 ) %>% 
   set_caption('Comparison of models')
+
+vif(m4) 
 
 ```
 
