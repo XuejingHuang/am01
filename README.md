@@ -17,9 +17,7 @@ Dataset Limitations:
 #Key Takeaways:
   1. Gender and Salary: Overall there is a statistically significant salary gap between men and woman in the dataset. We got to this conclusion by plotting the data, running a T.Test, calculating a confidence interval, and than testing our results through bootstraping. 
   As we looked deeper,however, there are some key differences in the gender salary gap in different industries. To start, the largest gap is seen in the Law industry, which has on avergae a $40,000 difference in salary between men and woman. In comparison, in the Art and Design industry the gender gap switches, as woman have higher average salaries in the field than man of about $10,000. 
-  The indutry that had the highest porportion of man were Computing and Tech, while XXXX has the highest porportion of woman. 
-   
-  - Computing & Tech is male intensive
+  The industry that had the highest porportion of man were Computing and Tech, while XXXX has the highest porportion of woman. 
 
   3. Industry and Salary: During our data anlaysis we were curious to see whether changing industries had a relationship to higher annual salries when looking at the data set. We created a graph to dipict that those who didn't switch had higher salaries and then ran a T.test that showed that this difference was statically significant. 
   In addition, when looking at industry, for both men and women Law is the industry with the highest salary levels. In addition, individuals working in law have the highest education levels. 
