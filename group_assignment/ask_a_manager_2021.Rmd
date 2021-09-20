@@ -733,11 +733,13 @@ We want to look at the relationship between one's gender and education degree. I
 
 ```{r prop_test_for_gender_education_college}
 
+ask_a_manager_2021 %>% filter(highest_level_of_education_completed == "High School") %>% count()
+
 ask_a_manager_2021_education <- ask_a_manager_2021 %>% 
    filter(gender !="Non-binary") %>%
-   mutate(high_school = if_else(highest_level_of_education_completed == "High School", "Yes", "No")) 
-   # group_by(gender) %>% 
-   # summarise(college_below=sum(high_school == "Yes"), college_or_above = sum(high_school == "No"))
+   mutate(high_school = if_else(education == "High School", "Yes", "No")) %>% 
+   group_by(gender) %>%
+   summarise(college_below=sum(high_school == "Yes"), college_or_above = sum(high_school == "No"))
 
 ask_a_manager_2021_education
 
@@ -772,12 +774,12 @@ Here we want to see if race is affecting the salary.
 ```{r t_test_for_race_education}
 ask_a_manager_salary <- ask_a_manager_2021 %>% 
   mutate(if_white = if_else(race == "White", "Yes", "No")) %>% 
-  select(if_white,salary)
+  select(if_white,converted_salary)
 ask_a_manager_salary
-t.test(salary~if_white, data = ask_a_manager_salary, success = "Yes")
+t.test(converted_salary~if_white, data = ask_a_manager_salary, success = "Yes")
 ```
+Here we see that Non-whites have a higher mean salary on average. This is due to asian americans having an extremely high average salary.
 
-> wisely choose the race. like white vs. not white
 
 ## Race vs Education (Jean)
 
@@ -795,7 +797,7 @@ ask_a_manager_2021_race <- ask_a_manager_2021 %>%
 
 ask_a_manager_2021_race
 
-prop.test(x = c(3893,20916), n = c(80+3893,468+20916), alternative = "two.sided")
+prop.test(x = c(74,454), n = c(74+3786,454+20585), alternative = "two.sided")
 ```
 
 Similarly, if we run the test for the propotion of master_or_above education level between white and non-white races:
@@ -809,11 +811,12 @@ ask_a_manager_2021_race <- ask_a_manager_2021 %>%
 
 ask_a_manager_2021_race
 
-prop.test(x = c(2792,14370), n = c(1181+2792,7014+14370), alternative = "two.sided")
+prop.test(x = c(1152,6905), n = c(1152+2708,6905+14134), alternative = "two.sided")
 ```
 
-From the result of the proportion test, we cannot see a clear difference between the proportion of education level in white and non-white group, as the p-value is higher than 5%.
+From the result of the proportion test, we cannot see a clear difference between the proportion of education level in white and non-white group, as the p-value is higher than 5%. 
 
+So to conclude there is a significant difference in proportion of whites and non whites who acheive a masters degree.
 
 ## Changed Industry? vs salary (Raghav)
 ```{r}
@@ -823,7 +826,7 @@ mutate(if_changed= if_else(overall_years_of_professional_experience == years_of_
 ```
 
 
-```{r}
+```{r, echo=FALSE}
 ask_a_manager_2021_changed %>% 
 ggplot(aes(x=fct_relevel(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")), y=annual_salary, color=if_changed))+
   # scatter plot
@@ -886,14 +889,14 @@ colnames(ask_a_manager_2021)
 ```{r}
 reg_data <- ask_a_manager_2021 %>% 
   mutate(country = ifelse(country=="US","US","Non-US"))
-
+meanmodel <- lm(converted_salary ~ 1, data=reg_data)
 m1 <- lm(converted_salary ~ education, data=reg_data)
 m2 <- lm(converted_salary ~ education + age_group, data=reg_data)
 m3 <- lm(converted_salary ~ education + gender, data=reg_data)
 m4 <- lm(converted_salary ~ education + age_group + gender + pro_exp + field_exp, data=reg_data)
 m5 <- lm(converted_salary ~ education + age_group + gender + field_exp, data=reg_data)
 
-huxreg(m1, m2, m3, m4, m5,
+huxreg(meanmodel, m1, m2, m3, m4, m5,
        statistics = c('#observations' = 'nobs', 
                       'R squared' = 'r.squared', 
                       'Adj. R Squared' = 'adj.r.squared', 
