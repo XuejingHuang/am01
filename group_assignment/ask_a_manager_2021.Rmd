@@ -3,6 +3,12 @@ title: "Ask A Manager 2021"
 author: "Group 5 MAM"
 date: "2021-09-16"
 output: html_document
+html_document:
+    theme: flatly
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+    code_folding: show
 ---
 
 ```{r, setup, echo=FALSE}
@@ -49,7 +55,7 @@ skimr::skim(ask_a_manager_2021)
 
 ```
 
-# Data cleaning (exchange rate: Alex)
+# Data cleaning
 
 After skimming the dataset, we took the below steps to clean the raw data :
 
@@ -188,7 +194,7 @@ ask_a_manager_2021 %>%
 
 ## Counts
 
-```{r, fig.width=3}
+```{r, fig.width=3, eval=FALSE}
 # Some quick counts, groups, etc
 ask_a_manager_2021 %>% 
   count(age_group, sort=TRUE) %>% 
@@ -240,7 +246,7 @@ ask_a_manager_2021 %>%
 #make comments about the counts 
 ```
 
-## Salary (Yuan)
+## Salary
 
 How is salary distributed?
 
@@ -275,7 +281,7 @@ gridExtra::grid.arrange(g1,g2,g3,g4)
 
 Observation: This is a right skewed distribution. 
 
-## Industry (Yuan)
+## Industry
 
 ```{r}
 ask_a_manager_2021 %>% 
@@ -290,7 +296,7 @@ Observations:
 - Computing & tech is the top-chosen industry among respondents, followed by Education and Non-profit
 - This indicate that the sample might include more respondents from industries have higher exposure to tech and internet.
 
-## Salary ,Gender and Industry (Yuan)
+## Salary ,Gender and Industry
 
 We are interested in the type of industries with top salary for man and woman.
 
@@ -323,7 +329,8 @@ g_man <- salary_table %>%
         legend.title=element_text(size=13))+
   NULL
 
-ggsave("highest_paid_industries_male.png",width = 12,height = 8,limitsize = F)
+# ggsave("highest_paid_industries_male.png",width = 12,height = 8,limitsize = F)
+
 g_woman <- salary_table %>% 
   ggplot(aes(y=fct_reorder(industry,avg_salary_Woman), x=avg_salary_Woman,fill=higher_edu_prop_Woman))+
   geom_bar( position="dodge", stat="identity")+
@@ -342,8 +349,7 @@ g_woman <- salary_table %>%
         legend.title=element_text(size=13))+
   NULL
 
-
-ggsave("highest_paid_industries_female.png",width = 12,height = 8,limitsize = F)
+# ggsave("highest_paid_industries_female.png",width = 12,height = 8,limitsize = F)
 
 ```
 
@@ -387,7 +393,7 @@ ask_a_manager_2021 %>%
         legend.title=element_text(size=13))+
   NULL
 
-ggsave("salary_gap.png",width = 12,height = 8,limitsize = F)
+# ggsave("salary_gap.png",width = 12,height = 8,limitsize = F)
 
 ```
 
@@ -398,7 +404,7 @@ Observations:
 - The proportion of male within computing or tech is significantly higher than that within other industries; yet the proportion only reaches c. 40%, reflecting the fact that most respondents are female because Ask_a_manager is more popular among women
 - The proportion of male is also higher in labour-intensive industries such as transport or logistics, engineering, utilities & telecommunications
 
-## Education (Jean)
+## Education
 
 Next, we want to see if there is a difference in the salary gap between man and woman for different education level.
 
@@ -425,7 +431,7 @@ ask_a_manager_2021 %>%
   xlab("Education Level") + ylab ("Salary Gap in $") + 
   NULL
 
-ggsave("salary_gap_by_edu.png",width = 14,height = 8,limitsize = F)
+# ggsave("salary_gap_by_edu.png",width = 14,height = 8,limitsize = F)
 
 ```
 
@@ -449,7 +455,7 @@ ask_a_manager_2021 %>%
 ```
 
 
-## Race (Clara)
+## Race
 
 ### Count 
 ```{r}
@@ -494,9 +500,10 @@ ask_a_manager_2021 %>%
   
 ```
 Observation:
-In our boxplot one can visualize both the distribution of the data and the medium and interquartile ranges of the data. When comparing annual salary by race, our data shows that Asians have the higher salaries in comparison to Black and African American and White sample respondents. Interestingly enough, our sample also shows that the medium salary for Black and AA respondents is higher than that of White respondents. 
 
-Since most repondents were white, the larger sample size is less prone to skewness due to outliers when comparing it to the other two races portrayed in the plot. 
+- In our boxplot one can visualize both the distribution of the data and the medium and interquartile ranges of the data. When comparing annual salary by race, our data shows that Asians have the higher salaries in comparison to Black and African American and White sample respondents. Interestingly enough, our sample also shows that the medium salary for Black and AA respondents is higher than that of White respondents. 
+
+- Since most repondents were white, the larger sample size is less prone to skewness due to outliers when comparing it to the other two races portrayed in the plot. 
 
 ```{r}
 
@@ -508,6 +515,7 @@ t.test(salary ~ race, data = ask_a_manager_2021_race)
 
 ```
 When running a T-test on the two racial groups, White and Black or African American, the P-value we get is 0.9. Thus there is no statistically signifcant difference in their annual salary when calculating it based of off this data set. 
+
 ### Race and Mean Salary 
 
 ```{r, echo=FALSE}
@@ -525,11 +533,8 @@ ask_a_manager_2021 %>%
   NULL
 ```
 
-```{r}
 
-```
-
-## Location (Alex)
+## Location
 
 ```{r}
 #This package is useful for creating a map of the USA
@@ -573,7 +578,7 @@ ask_a_manager_2021 %>%
 # null hypothesis: no difference between
 ```
 
-## Age (Raina)
+## Age
 
 ```{r}
 ask_a_manager_2021 %>% 
@@ -615,10 +620,53 @@ ask_a_manager_age %>%
   NULL
 ```
 
+## Changed Industry vs salary
+
+```{r}
+ask_a_manager_2021_changed <- ask_a_manager_2021  %>%
+mutate(if_changed= if_else(overall_years_of_professional_experience == years_of_experience_in_field, "No", "Yes"))
+
+```
+
+
+```{r}
+ask_a_manager_2021_changed %>% 
+ggplot(aes(x=fct_relevel(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")), y=annual_salary, color=if_changed))+
+  # scatter plot
+  geom_point(alpha = 0.5)+
+  # linear smooth line
+  geom_smooth(method = "lm")+
+  # legend settings
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+  labs(title="Whether changing job affects your salary",
+       x="Total Years Spent Working",
+       y="Salary")+
+  theme_bw()+
+  NULL
+```
+
+```{r}
+ask_a_manager_2021_changed %>% 
+  group_by(overall_years_of_professional_experience, if_changed) %>% 
+  summarise (median_salary_over_time = median (salary),
+             mean_salary_over_time = mean(salary)) %>% 
+  ggplot () +
+  geom_col(aes (fct_relevel(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")), median_salary_over_time, fill=if_changed), position = position_dodge(width = 0.9), alpha = 0.7)+
+  geom_point(aes(x = overall_years_of_professional_experience, y=mean_salary_over_time, color = if_changed))+
+  theme_bw()+
+  #formatC(x, format = "d")+
+  labs(  title =  "Median Salary over time" , y="Salary" ,x = "Prof") +
+  NULL
+
+ggsave("switch_industry.png",width = 12,height = 8,limitsize = F)
+
+```
+
 # Statistical Tests
 
 
-## Gender vs Salary (Clara)
+## Gender vs Salary
 
 ### General Statistics & Boxplot
 
@@ -686,7 +734,9 @@ mutate(t_critical = qt(0.975,n-1),
 # Add graph of two distributions and confidence intervals 
 ```
 
-Observation: Since two 95% confidence intervals do not overlap, we are at least 95% confident that the male have higher salary than the female on average.
+Observation: 
+
+- Since two 95% confidence intervals do not overlap, we are at least 95% confident that the male have higher salary than the female on average.
 
 ### Bootstrap Test 
 
@@ -715,10 +765,13 @@ p_value <- salary_in_null_world %>%
   get_pvalue(obs_stat = diff, direction="both")
 p_value
 ```
-Observation: Our null hypothesis is that the difference of annual salaries between male and female is 0 and we get a p_value very close to 0. Therefore we reject the null hypothesis with 95% confidence. There is difference between the average male and female salary.
+
+Observation: 
+
+- Our null hypothesis is that the difference of annual salaries between male and female is 0 and we get a p_value very close to 0. Therefore we reject the null hypothesis with 95% confidence. There is difference between the average male and female salary.
 
 
-## Gender vs Education (Jean)
+## Gender vs Education
 
 We want to look at the relationship between one's gender and education degree. In essence, we want to explore if there is a difference in the proportion of respondents with high school degree as their highest degree for male group and the female group. We can use the proportion test to generate the result from the male and female sample.
 
@@ -736,7 +789,9 @@ prop.test(x = c(4030,18584), n = c(4030+687,18584+1598), alternative = "two.side
 
 ```
 
-From the result of proportion test for male group and female group, we are 99% confident that the proportion of high school as highest education level for male is higher than that for female, indicating that overall female has a higher college-entry rate vs. the male.
+Observations:
+
+- From the result of proportion test for male group and female group, we are 99% confident that the proportion of high school as highest education level for male is higher than that for female, indicating that overall female has a higher college-entry rate vs. the male.
 
 If we repeat the process to explore the difference in proportion in acquiring a masters or above degree for both gender:
 
@@ -755,9 +810,12 @@ prop.test(x = c(1654, 8922), n = c(1654+3063, 8922+11260), alternative = "two.si
 
 ```
 
-From the result of two proportion tests, we can see that even though the proportion of acquiring a college-or-above degree is less in the male group, the proportion of acquiring higher education degree (Master's-or-above) is higher than the female group. This somehow explains the fact that there are more outliers in male sample with extremely high income level.
+Observations:
 
-## Race vs Salary (Raina)
+- From the result of two proportion tests, we can see that even though the proportion of acquiring a college-or-above degree is less in the male group, the proportion of acquiring higher education degree (Master's-or-above) is higher than the female group
+- This somehow explains the fact that there are more outliers in male sample with extremely high income level
+
+## Race vs Salary
 
 Here we want to see if race is affecting the salary.
 
@@ -765,13 +823,12 @@ Here we want to see if race is affecting the salary.
 ask_a_manager_salary <- ask_a_manager_2021 %>% 
   mutate(if_white = if_else(race == "White", "Yes", "No")) %>% 
   select(if_white,salary)
-ask_a_manager_salary
+
 t.test(salary~if_white, data = ask_a_manager_salary, success = "Yes")
 ```
 
-> wisely choose the race. like white vs. not white
 
-## Race vs Education (Jean)
+## Race vs Education 
 
 We want to look at the relationship between one's race and education degree. Particularly, we want to see if there is a difference in education level for those being white and those being non-white.
 
@@ -805,54 +862,14 @@ ask_a_manager_2021_race
 prop.test(x = c(1513, 9063), n = c(1513+2347, 9063+11976), alternative = "two.sided")
 
 ```
+Observations:
 
-From the result of the proportion test, we cannot see a clear difference between the proportion of education level in white and non-white group, as the p-value is higher than 5%.
+- From the result of the proportion test, we cannot see a clear difference between the proportion of education level in white and non-white group, as the p-value is higher than 5%.
 
-However, the proportion of acquiring higher education degree (Master’s-or-above) is higher in the white group vs. other races
-
-
-## Changed Industry? vs salary (Raghav)
-```{r}
-ask_a_manager_2021_changed <- ask_a_manager_2021  %>%
-mutate(if_changed= if_else(overall_years_of_professional_experience == years_of_experience_in_field, "No", "Yes"))
-
-```
+- However, the proportion of acquiring higher education degree (Master’s-or-above) is higher in the white group vs. other races
 
 
-```{r}
-ask_a_manager_2021_changed %>% 
-ggplot(aes(x=fct_relevel(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")), y=annual_salary, color=if_changed))+
-  # scatter plot
-  geom_point(alpha = 0.5)+
-  # linear smooth line
-  geom_smooth(method = "lm")+
-  # legend settings
-  theme(legend.position = "bottom",
-        legend.title = element_blank())+
-  labs(title="Whether changing job affects your salary",
-       x="Total Years Spent Working",
-       y="Salary")+
-  theme_bw()+
-  NULL
-```
-
-
-```{r}
-ask_a_manager_2021_changed %>% 
-  group_by(overall_years_of_professional_experience, if_changed) %>% 
-  summarise (median_salary_over_time = median (salary),
-             mean_salary_over_time = mean(salary)) %>% 
-  ggplot () +
-  geom_col(aes (fct_relevel(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")), median_salary_over_time, fill=if_changed), position = position_dodge(width = 0.9), alpha = 0.7)+
-  geom_point(aes(x = overall_years_of_professional_experience, y=mean_salary_over_time, color = if_changed))+
-  theme_bw()+
-  #formatC(x, format = "d")+
-  labs(  title =  "Median Salary over time" , y="Salary" ,x = "Prof") +
-  NULL
-
-ggsave("switch_industry.png",width = 12,height = 8,limitsize = F)
-
-```
+## Changed Industry vs salary
 
 
 ```{r}
@@ -875,9 +892,9 @@ ask_a_manager_age %>%
 ```
 
 
-# Regression Analysis (Yuan)
+# Regression Analysis 
 
-```{r}
+```{r, eval = FALSE}
 colnames(ask_a_manager_2021)
 ```
 
