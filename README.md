@@ -17,16 +17,18 @@ tags: []
 #### Key Takeaways:
   1. Gender and Salary: Overall there is a statistically significant salary gap between men and woman in the dataset. This is confirmed through multiple methods such as plotting the data, running a T.Test, calculating a confidence interval, and than testing our results through bootstraping. 
   As we looked deeper, however, there are some key differences in the gender salary gap in different industries. To start, the largest gap is seen in the Law industry, which has on avergae a $40,000 difference in salary between men and woman. In comparison, in the Art and Design industry the gender gap switches, as woman have higher average salaries in the field by about $10,000. 
-  The industry that had the highest porportion of man were Computing and Tech, while XXXX has the highest porportion of woman. 
 
   3. Changing Industry and Salary: During our data anlaysis we were curious to see whether changing industries lead to higher annual salaries. We created a graph to depict this and we found that those who didn't switch industry had higher salaries. We then ran a T.test that showed that this difference in average salary between those that remained in the same industry and those that switched was statically significant. 
   In addition, when looking at industry, for both men and women Law is the industry with the highest salary levels. In addition, individuals working in law have the highest education levels. This brings us to our next point of the relationship between education and salary.
   
   3. Education and Salary: Education level was shown to be statistically significant in explaining variation in annual salaries in our linear regression models. Those with professional degrees (MD, JD, etc) on average earned higher salaries. The gender gap is also prevalent within the respondents who have higher education levels. The pay gap between genders is highest at the high school level and gradually lowers until the professional degree level. This shows that as education levels increase, the salary gap gets lower. There is however an exception with the gender pay gap spiking with PhDs.
+ 
+  4. As one would expect, we found that as years of experience in the field increased, average annual salary also increased. This is because as people can more experience they can provide more value and garner a higher salary.  This was shown in the regression models with the different levels in years of experience all being statistically significant. 
 
-4. As one would expect, we found that as years of experience in the field increased, average annual salary also increased. This is because as people can more experience they can provide more value and garner a higher salary.  This was shown in the regression models with the different levels in years of experience all being statistically significant. 
+  5. 4. Salary and Race: When looking into the interectoin of salary and race, we picked the three races with at least 500 respondents - White, African American or Black, and Asian or Asian American. When plotting the data in a boxplot format, we could easily see that the Asian race had on avergae higher salaries. However, boxplots for the White and African American or Black races were very similar and we decided to run a T.test. The T.test ended up caculating a P value of .3, thus we can conclude that there isn't a statistically significant differenec between the means in salary of these two races. 
 
-#Can mention EDA results are supported by t.tests (should be done)
+
+#Can mention EDA results are supported by t.tests (should be done - included above)
 
 
 Explain stuff using t.tests and models
