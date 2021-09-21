@@ -37,6 +37,14 @@ library(hrbrthemes)
 library(viridis)
 library(infer)
 library(readr)
+library(vroom)
+#library to get currency data (and other financial data)
+library(quantmod)
+#This package is useful for creating a map of the USA
+library(usmap)
+library(ggrepel)
+library(rsample)
+library(caret)
 
 ```
 
@@ -57,6 +65,7 @@ After skimming the dataset, we took the below steps to clean the raw data :
 - Removing NA values
 - Removing outliers (out of $[25\%-1.5\times IQR,75\%+1.5\times IQR]$)
 - Transforming certain datatype into factor
+- Removing problematic entries (some people under 18 years old have more than 18 years experience)
 - Selecting key industries from 1000+ industries reported
 - Unifying currencies
 
@@ -69,6 +78,66 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
            race!="NA" &
            highest_level_of_education_completed!="NA"&
            annual_salary>0)
+```
+
+
+## Removing outliers
+
+```{r remove-outliers-z-score}
+# using z-score. remove data out of 3 sigma
+# ask_a_manager_2021 <- ask_a_manager_2021[-which(abs(scale(ask_a_manager_2021$annual_salary))>3),]
+
+```
+
+```{r}
+# using quantile. remove data larger than 75%+1.5*IQR or smaller than 25%-1.5*IQR
+# we choose this method recommended by the stats community
+Q <- quantile(ask_a_manager_2021$annual_salary, probs=c(.25, .75))
+iqr <- IQR(ask_a_manager_2021$annual_salary)
+up <-  Q[2]+1.5*iqr # Upper Range
+low <-  Q[1]-1.5*iqr # Upper Range
+ask_a_manager_2021 <- ask_a_manager_2021 %>%
+  filter(annual_salary>=low & annual_salary<=up)
+```
+
+## Removing very small age group
+
+We observe there are only 2 samples under 18 years old correctly entered their data, so we remove them to make analysis between age groups possible.
+
+```{r}
+ask_a_manager_2021 %>% 
+  group_by(how_old_are_you, gender) %>% 
+  summarise(count=n()) %>% 
+  ggplot(aes(x=fct_relevel(how_old_are_you,levels=c("under 18","18-24","25-34","35-44","45-54","55-64","65 or over")),y=count))+
+  geom_col()+
+  labs(title="Sample size in age groups",
+       x="Age Group",
+       y="number of samples")+
+  NULL
+  
+
+ask_a_manager_2021 <- ask_a_manager_2021 %>% 
+  filter(how_old_are_you!="under 18")
+```
+
+## Transforming into ordered `factor` datatype
+
+Namely, we want to make age, years of working experience, education into `factor`, and take the log of salary for the next step of EDA.
+
+```{r, warning=FALSE}
+ask_a_manager_2021 <- ask_a_manager_2021 %>% 
+  mutate(
+    country = countrycode::countryname(country),
+    age_group = factor(how_old_are_you,levels=c("18-24","25-34","35-44","45-54","55-64","65 or over")),
+    field_exp = factor(years_of_experience_in_field,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")),
+    pro_exp = factor(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")),
+    education = factor(highest_level_of_education_completed, levels=c("High School","Some college","College degree","Master's degree","Professional degree (MD, JD, etc.)", "PhD")),
+     higher_edu = ifelse(education %in% c("College degree","Master's degree", "PhD", "Professional degree (MD, JD, etc.)"),1,0),
+    salary = annual_salary,
+    # take ln() to annual salary
+    log_salary = log(annual_salary)
+  ) %>% 
+  janitor::clean_names() # clean columns names
 ```
 
 ## Remove problematic entries
@@ -95,44 +164,6 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
 ```
 
 
-## Removing outliers
-
-```{r remove-outliers-z-score}
-# using z-score. remove data out of 3 sigma
-# ask_a_manager_2021 <- ask_a_manager_2021[-which(abs(scale(ask_a_manager_2021$annual_salary))>3),]
-
-```
-
-```{r}
-# using quantile. remove data larger than 75%+1.5*IQR or smaller than 25%-1.5*IQR
-# we choose this method recommended by the stats community
-Q <- quantile(ask_a_manager_2021$annual_salary, probs=c(.25, .75))
-iqr <- IQR(ask_a_manager_2021$annual_salary)
-up <-  Q[2]+1.5*iqr # Upper Range
-low <-  Q[1]-1.5*iqr # Upper Range
-ask_a_manager_2021 <- ask_a_manager_2021 %>%
-  filter(annual_salary>=low & annual_salary<=up)
-```
-
-## Transforming into ordered `factor` datatype
-
-Namely, we want to make age, years of working experience, education into `factor`, and take the log of salary for the next step of EDA.
-
-```{r, warning=FALSE}
-ask_a_manager_2021 <- ask_a_manager_2021 %>% 
-  mutate(
-    country = countrycode::countryname(country),
-    age_group = factor(how_old_are_you,levels=c("under 18","18-24","25-34","35-44","45-54","55-64","65 or over")),
-    field_exp = factor(years_of_experience_in_field,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")),
-    pro_exp = factor(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")),
-    education = factor(highest_level_of_education_completed, levels=c("High School","Some college","College degree","Master's degree","Professional degree (MD, JD, etc.)", "PhD")),
-     higher_edu = ifelse(education %in% c("College degree","Master's degree", "PhD", "Professional degree (MD, JD, etc.)"),1,0),
-    salary = annual_salary,
-    # take ln() to annual salary
-    log_salary = log(annual_salary)
-  ) %>% 
-  janitor::clean_names() # clean columns names
-```
 
 ## Selecting industries
 
@@ -168,9 +199,6 @@ ask_a_manager_2021 %>%
 From the above table, We can see that USD, CAD, GBP, EUR, (AUD/NZD) are the most common currencies. We will convert the currencies all to USD using exchange rate data from library `quantmod`, and the exchange rate will be taken from the last date of the survey "2021-09-14"
 
 ```{r warning=FALSE, message=FALSE}
-library(quantmod)
-#library to get currency data (and other financial data)
-
 #gets the currency rate for the currency pairs. This uses the Oanda which keeps currency data for the last 180 days.
 #In 180 days from "2021-09-14" the code will no longer return the currency rates.
 currencies <-getSymbols(c("EUR/USD","CAD/USD","GBP/USD","AUD/USD" , "NZD/USD"),
@@ -556,17 +584,9 @@ ask_a_manager_2021 %>%
   NULL
 ```
 
-```{r}
-
-```
-
 ## Location (Alex)
 
 ```{r}
-#This package is useful for creating a map of the USA
-library(usmap)
-library(ggrepel)
-
 #create df of the list of states with >10 occurrences 
 #This allows us to get data for actual states as many data entry errors
 #many individuals put multiple states and this helps to fix that
@@ -602,16 +622,6 @@ ask_a_manager_2021 %>%
   geom_col()
 
 # null hypothesis: no difference between
-```
-
-## Age (Raina)
-
-```{r}
-ask_a_manager_2021 %>% 
-  group_by(age_group, gender) %>% 
-  summarise(count=n()) 
-  #ggplot(aes(y=fct_reorder(how_old_are_you,count),x=count))+
-  #geom_col()
 ```
 
 
@@ -909,11 +919,6 @@ ask_a_manager_age %>%
 # Regression Analysis (Yuan)
 
 ```{r}
-colnames(ask_a_manager_2021)
-```
-
-
-```{r}
 
 # load population data of US
 population_url <- "https://www.ers.usda.gov/webdocs/DataFiles/48747/PopulationEstimates.csv?v=2232"
@@ -948,7 +953,10 @@ reg_data <- ask_a_manager_2021 %>%
                            T~"Others"),
          ) %>% 
   left_join(population,by = c("state")) %>% 
-  select(c("age_group","gender","education","field_exp","pro_exp","race","salary","research","manager","engineer","industry","analyst","data_related","scientist","database","librarian","add_context_job","add_context_inc","pop_estimate_2019_m"))
+  select(c("age_group","gender","education","field_exp","pro_exp","race",
+           "salary","research","manager","engineer","industry","analyst",
+           "data_related","scientist","database","librarian","add_context_job",
+           "add_context_inc","pop_estimate_2019_m"))
 set.seed(1234)
 data_split <- initial_split(reg_data, prop = .7)
 data_train <- training(data_split)
@@ -982,7 +990,6 @@ m9 <- lm(salary ~ field_exp+gender+gender*field_exp+education+race+pop_estimate_
 m10 <- lm(salary ~ field_exp+gender+gender*field_exp+education+race+pop_estimate_2019_m++research+manager+engineer+industry+data_related+scientist+database+librarian+add_context_job+add_context_inc, data=data_train)
 m11 <- lm(salary ~ field_exp+gender+gender*field_exp+education+race+pop_estimate_2019_m++research+manager+engineer+industry+data_related+scientist+database+librarian+add_context_job+add_context_inc+data_related*scientist, data=data_train)
 
-
 huxreg(m4, m5, m6, m7, m8, m9,m10,m11,
        statistics = c('#observations' = 'nobs', 
                       'R squared' = 'r.squared', 
@@ -993,23 +1000,39 @@ huxreg(m4, m5, m6, m7, m8, m9,m10,m11,
 ) %>% 
   set_caption('Comparison of models (adding variables)')
 
+# calculate rmse on test set of 11 models
 models <- list(m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11)
 rmses <- c()
 i <- 0
 for (model in models){
   i = i + 1
+  print(paste("model",i))
   preds <- predict(model, data_test)
   rmses[i] <- RMSE(
     pred = preds,
     obs = data_test$salary
-)
+    )
+  print(paste("RMSE on train data:",summary(model)$sigma))
+  print(paste("RMSE on test data:", rmses[i]))
+  
+  SS.total      <- with(data_test,sum((salary-mean(salary))^2))
+  #SS.residual   <- sum(residuals(model)^2)
+  SS.regression <- sum((preds-mean(data_test$salary))^2)
+  #SS.total - (SS.regression+SS.residual)
+  
+  print(paste("R Squared on train data", summary(model)$r.squared))     
+  print(paste("R Squared on test data", SS.regression/SS.total))  # fraction of variation explained by the model
+  
 }
+
 # for model 10, comparing to 28657.84 RMSE in training data. 
 # the RMSE 29507 is not very large indicating there is not very heavy over fitting problem
-print(rmses)
+
+
 
 
 ```
+
 
 
 
