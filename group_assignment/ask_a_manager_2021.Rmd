@@ -125,9 +125,8 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
     age_group = factor(how_old_are_you,levels=c("under 18","18-24","25-34","35-44","45-54","55-64","65 or over")),
     field_exp = factor(years_of_experience_in_field,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")),
     pro_exp = factor(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")),
-    education = factor(highest_level_of_education_completed, labels=c("High School","Some college","College degree","Master's degree","Professional degree", "PhD")),
-    # whether finish a college or above degree
-    higher_edu = ifelse(education %in% c("College degree","Master's degree", "PhD", "Professional degree"),1,0),
+    education = factor(highest_level_of_education_completed, levels=c("High School","Some college","College degree","Master's degree","Professional degree (MD, JD, etc.)", "PhD")),
+     higher_edu = ifelse(education %in% c("College degree","Master's degree", "PhD", "Professional degree (MD, JD, etc.)"),1,0),
     salary = annual_salary,
     # take ln() to annual salary
     log_salary = log(annual_salary)
@@ -454,9 +453,10 @@ ask_a_manager_2021 %>%
   theme_wsj()+
   theme(legend.position="bottom", axis.title=element_text(size=24))+
   ggtitle("Salary Gap at Different Education level") +
-  xlab("Education Level") + ylab ("Salary Gap Between Man and Woman in $") + 
+  xlab("Education Level") + ylab ("Salary Gap in $") + 
   NULL
 
+ggsave("salary_gap_by_edu.png",width = 14,height = 8,limitsize = F)
 
 ```
 
@@ -757,14 +757,13 @@ We want to look at the relationship between one's gender and education degree. I
 
 ask_a_manager_2021_education <- ask_a_manager_2021 %>% 
    filter(gender !="Non-binary") %>%
-   mutate(high_school = if_else(highest_level_of_education_completed == "High School", "Yes", "No")) %>% 
+   mutate(below_college = if_else(highest_level_of_education_completed %in% c("High School", "Some college"), "Yes", "No")) %>% 
    group_by(gender) %>% 
-   summarise(college_below=sum(high_school == "Yes"), college_or_above = sum(high_school == "No"))
+   summarise(college_below=sum(below_college == "Yes"), college_or_above = sum(below_college == "No"))
 
 ask_a_manager_2021_education
 
-prop.test(x = c(4612,20197), n = c(4612+209,20197+339), alternative = "two.sided")
-
+prop.test(x = c(4030,18584), n = c(4030+687,18584+1598), alternative = "two.sided")
 
 ```
 
@@ -775,14 +774,16 @@ If we repeat the process to explore the difference in proportion in acquiring a 
 ```{r prop_test_for_gender_education_master}
 ask_a_manager_2021_education <- ask_a_manager_2021 %>% 
   filter(gender !="Non-binary") %>%
-  mutate(higher_edu = if_else(highest_level_of_education_completed %in% c("Master's degree", "Professional degree", "Phd"), "Yes", "No")) %>% 
+  mutate(higher_edu = if_else(highest_level_of_education_completed %in% c("Master's degree", "Professional degree (MD, JD, etc.)", "PhD"), "Yes", "No")) %>% 
   group_by(gender) %>% 
-  summarise(master_or_above=sum(higher_edu == "Yes"), master_below = sum(higher_edu == "No"))
+  summarise(master_below = sum(higher_edu == "No"), master_or_above=sum(higher_edu == "Yes") )
 
 
 ask_a_manager_2021_education
 
-prop.test(x = c(3559,13603), n = c(1262+3559,6933+13603), alternative = "two.sided")
+prop.test(x = c(1654, 8922), n = c(1654+3063, 8922+11260), alternative = "two.sided")
+
+
 ```
 
 From the result of two proportion tests, we can see that even though the proportion of acquiring a college-or-above degree is less in the male group, the proportion of acquiring higher education degree (Master's-or-above) is higher than the female group. This somehow explains the fact that there are more outliers in male sample with extremely high income level.
@@ -811,13 +812,14 @@ As the above analysis for gender vs. education, we run two proportion tests for 
 
 ask_a_manager_2021_race <- ask_a_manager_2021 %>% 
   mutate(if_white = if_else(race == "White", "White", "Non-white"),
-         high_school = if_else(highest_level_of_education_completed == "High School", "Yes", "No")) %>% 
+         below_college = if_else(highest_level_of_education_completed %in% c( "High School", "Some college"), "Yes", "No")) %>% 
   group_by(if_white) %>% 
-  summarise(college_below=sum(high_school == "Yes"), college_or_above = sum(high_school == "No"))
+  summarise(college_below=sum(below_college == "Yes"), college_or_above = sum(below_college == "No"))
 
 ask_a_manager_2021_race
 
-prop.test(x = c(3893,20916), n = c(80+3893,468+20916), alternative = "two.sided")
+prop.test(x = c(3510,19104), n = c(3510+350, 19104+1935), alternative = "two.sided")
+
 ```
 
 Similarly, if we run the test for the propotion of master_or_above education level between white and non-white races:
@@ -825,16 +827,19 @@ Similarly, if we run the test for the propotion of master_or_above education lev
 ```{r prop_test_for_race_education_master}
 ask_a_manager_2021_race <- ask_a_manager_2021 %>% 
   mutate(if_white = if_else(race == "White", "White", "Non-white"),
-         higher_edu = if_else(highest_level_of_education_completed %in% c("Master's degree", "Professional degree", "Phd"), "Yes", "No")) %>% 
+         higher_edu = if_else(highest_level_of_education_completed %in% c("Master's degree", "Professional degree (MD, JD, etc.)", "PhD"), "Yes", "No")) %>% 
   group_by(if_white) %>% 
-  summarise(master_or_above=sum(higher_edu == "Yes"), master_below = sum(higher_edu == "No"))
+  summarise(master_below = sum(higher_edu == "No"), master_or_above=sum(higher_edu == "Yes") )
 
 ask_a_manager_2021_race
 
-prop.test(x = c(2792,14370), n = c(1181+2792,7014+14370), alternative = "two.sided")
+prop.test(x = c(1513, 9063), n = c(1513+2347, 9063+11976), alternative = "two.sided")
+
 ```
 
 From the result of the proportion test, we cannot see a clear difference between the proportion of education level in white and non-white group, as the p-value is higher than 5%.
+
+However, the proportion of acquiring higher education degree (Master’s-or-above) is higher in the white group vs. other races
 
 
 ## Changed Industry? vs salary (Raghav)
@@ -875,6 +880,9 @@ ask_a_manager_2021_changed %>%
   #formatC(x, format = "d")+
   labs(  title =  "Median Salary over time" , y="Salary" ,x = "Prof") +
   NULL
+
+ggsave("switch_industry.png",width = 12,height = 8,limitsize = F)
+
 ```
 
 
