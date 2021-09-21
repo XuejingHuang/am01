@@ -259,12 +259,14 @@ ask_a_manager_2021 %>%
 # 'country' 
 ask_a_manager_2021 %>%
   count(country, sort=TRUE) %>% 
-  mutate(percent = 100* n/sum(n))
+  mutate(percent = 100* n/sum(n)) %>% 
+  head()
 
 # 'city' 
 ask_a_manager_2021 %>% 
   count(city, sort=TRUE) %>% 
-  mutate(percent = 100* n/sum(n))
+  mutate(percent = 100* n/sum(n)) %>% 
+  head()
 
 # education 
 ask_a_manager_2021 %>% 
@@ -282,7 +284,8 @@ ask_a_manager_2021 %>%
 ask_a_manager_2021 %>% 
   count(race) %>% 
   mutate(percent = 100* n/sum(n))%>% 
-  arrange(desc(percent))
+  arrange(desc(percent)) %>% 
+  head()
 
 # pro_exp 
 ask_a_manager_2021 %>% 
@@ -552,6 +555,7 @@ ask_a_manager_2021 %>%
     NULL
   
 ```
+
 Observation:
 In our boxplot one can visualize both the distribution of the data and the medium and interquartile ranges of the data. When comparing annual salary by race, our data shows that Asians have the higher salaries in comparison to Black and African American and White sample respondents. Interestingly enough, our sample also shows that the medium salary for Black and AA respondents is higher than that of White respondents. 
 
@@ -806,7 +810,6 @@ Here we want to see if race is affecting the salary.
 ask_a_manager_salary <- ask_a_manager_2021 %>% 
   mutate(if_white = if_else(race == "White", "Yes", "No")) %>% 
   select(if_white,salary)
-ask_a_manager_salary
 t.test(salary~if_white, data = ask_a_manager_salary, success = "Yes")
 ```
 
@@ -957,7 +960,7 @@ reg_data <- ask_a_manager_2021 %>%
            "salary","research","manager","engineer","industry","analyst",
            "data_related","scientist","database","librarian","add_context_job",
            "add_context_inc","pop_estimate_2019_m"))
-set.seed(1234)
+set.seed(2021)
 data_split <- initial_split(reg_data, prop = .7)
 data_train <- training(data_split)
 data_test  <- testing(data_split)
@@ -1027,8 +1030,6 @@ for (model in models){
 
 # for model 10, comparing to 28657.84 RMSE in training data. 
 # the RMSE 29507 is not very large indicating there is not very heavy over fitting problem
-
-
 
 
 ```
