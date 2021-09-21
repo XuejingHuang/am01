@@ -36,6 +36,7 @@ library(tidyquant)
 library(hrbrthemes)
 library(viridis)
 library(infer)
+library(readr)
 
 ```
 
@@ -54,7 +55,7 @@ skimr::skim(ask_a_manager_2021)
 After skimming the dataset, we took the below steps to clean the raw data :
 
 - Removing NA values
-- Removing outliers (out of 3$\sigma$)
+- Removing outliers (out of $[25\%-1.5\times IQR,75\%+1.5\times IQR]$)
 - Transforming certain datatype into factor
 - Selecting key industries from 1000+ industries reported
 - Unifying currencies
@@ -62,29 +63,55 @@ After skimming the dataset, we took the below steps to clean the raw data :
 ## Removing NA values
 
 ```{r remove-na}
-# remove the NA values
+# remove the NA values and 0 salaries
 ask_a_manager_2021 <- ask_a_manager_2021 %>% 
   filter(!gender %in% c("NA","Other or prefer not to answer","Prefer not to answer", "Non-binary", NA) &
            race!="NA" &
-           highest_level_of_education_completed!="NA")
+           highest_level_of_education_completed!="NA"&
+           annual_salary>0)
 ```
+
+## Remove problematic entries
+
+```{r}
+# there are people under 18 having more than 18 years of experience
+ask_a_manager_2021 %>% 
+  filter(age_group=="under 18") %>% 
+  select(c("age_group","overall_years_of_professional_experience"))
+
+ask_a_manager_2021 <- ask_a_manager_2021 %>% 
+  mutate(max_age = case_when(how_old_are_you=="under 18"~18,
+                             how_old_are_you=="65 or over"~999,
+                             T~as.numeric(substr(how_old_are_you,4,5))),
+         # parse the first number in a character
+         min_exp = if_else(parse_number(overall_years_of_professional_experience)>
+                       parse_number(years_of_experience_in_field),
+                       parse_number(overall_years_of_professional_experience),
+                       parse_number(years_of_experience_in_field))) %>% 
+  # delete the problematic entries and the tow columns created here.
+  filter(max_age>=min_exp) %>% 
+  select(-c("max_age","min_exp"))
+
+```
+
 
 ## Removing outliers
 
 ```{r remove-outliers-z-score}
 # using z-score. remove data out of 3 sigma
-ask_a_manager_2021 <- ask_a_manager_2021[-which(abs(scale(ask_a_manager_2021$annual_salary))>3),]
+# ask_a_manager_2021 <- ask_a_manager_2021[-which(abs(scale(ask_a_manager_2021$annual_salary))>3),]
 
 ```
 
 ```{r}
 # using quantile. remove data larger than 75%+1.5*IQR or smaller than 25%-1.5*IQR
-# Q <- quantile(ask_a_manager_2021$salary, probs=c(.25, .75))
-# iqr <- IQR(ask_a_manager_2021$salary)
-# up <-  Q[2]+1.5*iqr # Upper Range  
-# up <-  Q[1]-1.5*iqr # Upper Range  
-# ask_a_manager_2021 <- ask_a_manager_2021 %>% 
-#   filter(salary>=low & salary<=up)
+# we choose this method recommended by the stats community
+Q <- quantile(ask_a_manager_2021$annual_salary, probs=c(.25, .75))
+iqr <- IQR(ask_a_manager_2021$annual_salary)
+up <-  Q[2]+1.5*iqr # Upper Range
+low <-  Q[1]-1.5*iqr # Upper Range
+ask_a_manager_2021 <- ask_a_manager_2021 %>%
+  filter(annual_salary>=low & annual_salary<=up)
 ```
 
 ## Transforming into ordered `factor` datatype
@@ -99,8 +126,10 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
     field_exp = factor(years_of_experience_in_field,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")),
     pro_exp = factor(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")),
     education = factor(highest_level_of_education_completed, labels=c("High School","Some college","College degree","Master's degree","Professional degree", "PhD")),
+    # whether finish a college or above degree
     higher_edu = ifelse(education %in% c("College degree","Master's degree", "PhD", "Professional degree"),1,0),
     salary = annual_salary,
+    # take ln() to annual salary
     log_salary = log(annual_salary)
   ) %>% 
   janitor::clean_names() # clean columns names
@@ -194,8 +223,11 @@ ask_a_manager_2021 %>%
   count(age_group, sort=TRUE) %>% 
   mutate(percent = 100* n/sum(n)) %>% 
   ggplot(aes(x=fct_relevel(age_group,levels=c("under 18","18-24","25-34","35-44","45-54","55-64","65 or over")), y=n)) +
-  geom_bar(stat="identity") + labs(title = "Age distribution of Ask a Manager survey respondents",                                                 x="Age group",
-                  y="Frequency",                                                  caption = "Source:Askamanager.com")
+  geom_bar(stat="identity") + 
+  labs(title = "Age distribution of Ask a Manager survey respondents",
+       x="Age group",
+       y="Frequency",                                                  
+       caption = "Source:Askamanager.com")
 
 # 'country' 
 ask_a_manager_2021 %>%
@@ -233,7 +265,7 @@ ask_a_manager_2021 %>%
 
 # field_exp  
 ask_a_manager_2021 %>% 
-  count(field_exp  ) %>% 
+  count(field_exp) %>% 
   mutate(percent = 100* n/sum(n))%>% 
   arrange(desc(percent))
 
@@ -874,25 +906,102 @@ colnames(ask_a_manager_2021)
 
 
 ```{r}
+
+# load population data of US
+population_url <- "https://www.ers.usda.gov/webdocs/DataFiles/48747/PopulationEstimates.csv?v=2232"
+population <- vroom(population_url) %>% 
+  janitor::clean_names() %>% 
+  
+  # select the latest data, namely 2019
+  select(fips = fip_stxt, state= area_name, pop_estimate_2019) %>% 
+  group_by(state) %>% 
+  summarise(pop_estimate_2019_m = sum(pop_estimate_2019)/1000000)
+
 reg_data <- ask_a_manager_2021 %>% 
-  mutate(country = ifelse(country=="US","US","Non-US"))
+  filter(!is.na(state)&industry %in% industry_list$industry[1:15]) %>%
+  group_by(state) %>%
+  filter(n()>10) %>% 
+  ungroup() %>% 
+  filter(country =="US"&currency=="USD") %>% 
+  mutate(job = tolower(job_title),
+         research=grepl("research", job),
+         manager=grepl("manager", job),
+         engineer=grepl("engineer", job),
+         analyst=grepl("analyst", job),
+         data_related = grepl("data", job),
+         scientist = grepl("scientist", job),
+         database = grepl("database", job),
+         librarian = grepl("librarian", job),
+         add_context_job = !is.na(additional_context_on_job_title),
+         add_context_inc = !is.na(additional_context_on_income),
+         race = case_when(race=="White"~"White",
+                           race=="Asian or Asian American"~"Asian",
+                           race=="Black or African American"~"Black",
+                           T~"Others"),
+         ) %>% 
+  left_join(population,by = c("state")) %>% 
+  select(c("age_group","gender","education","field_exp","pro_exp","race","salary","research","manager","engineer","industry","analyst","data_related","scientist","database","librarian","add_context_job","add_context_inc","pop_estimate_2019_m"))
+set.seed(1234)
+data_split <- initial_split(reg_data, prop = .7)
+data_train <- training(data_split)
+data_test  <- testing(data_split)
 
-m1 <- lm(converted_salary ~ education, data=reg_data)
-m2 <- lm(converted_salary ~ education + age_group, data=reg_data)
-m3 <- lm(converted_salary ~ education + gender, data=reg_data)
-m4 <- lm(converted_salary ~ education + age_group + gender + pro_exp + field_exp, data=reg_data)
-m5 <- lm(converted_salary ~ education + age_group + gender + field_exp, data=reg_data)
+m1 <- lm(salary ~ age_group, data=data_train)
+m2 <- lm(salary ~ pro_exp, data=data_train)
+m3 <- lm(salary ~ field_exp, data=data_train)
 
-huxreg(m1, m2, m3, m4, m5,
+huxreg(m1, m2, m3,
        statistics = c('#observations' = 'nobs', 
                       'R squared' = 'r.squared', 
                       'Adj. R Squared' = 'adj.r.squared', 
-                      'Residual SE' = 'sigma'), 
+                      'Residual SE' = 'sigma',
+                      "AIC" = "AIC"), 
        bold_signif = 0.05, 
        stars = NULL
 ) %>% 
-  set_caption('Comparison of models')
+  set_caption('Comparison of models (age or experience?)')
+```
+
+```{r}
+
+# add more variables to explore and improve accuracy
+m4 <- lm(salary ~ field_exp+gender, data=data_train)
+m5 <- lm(salary ~ field_exp+gender+gender*field_exp, data=data_train)
+m6 <- lm(salary ~ field_exp+gender+education, data=data_train)
+m7 <- lm(salary ~ field_exp+gender+gender*field_exp+education+race, data=data_train)
+m8 <- lm(salary ~ field_exp+gender+gender*field_exp+education+race+pop_estimate_2019_m, data=data_train)
+m9 <- lm(salary ~ field_exp+gender+gender*field_exp+education+race+pop_estimate_2019_m++research+manager+engineer+industry+data_related+scientist+database+librarian, data=data_train)
+m10 <- lm(salary ~ field_exp+gender+gender*field_exp+education+race+pop_estimate_2019_m++research+manager+engineer+industry+data_related+scientist+database+librarian+add_context_job+add_context_inc, data=data_train)
+m11 <- lm(salary ~ field_exp+gender+gender*field_exp+education+race+pop_estimate_2019_m++research+manager+engineer+industry+data_related+scientist+database+librarian+add_context_job+add_context_inc+data_related*scientist, data=data_train)
+
+
+huxreg(m4, m5, m6, m7, m8, m9,m10,m11,
+       statistics = c('#observations' = 'nobs', 
+                      'R squared' = 'r.squared', 
+                      'Adj. R Squared' = 'adj.r.squared', 
+                      'Residual SE' = 'sigma',
+                      "AIC" = "AIC"), 
+       bold_signif = 0.05
+) %>% 
+  set_caption('Comparison of models (adding variables)')
+
+models <- list(m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11)
+rmses <- c()
+i <- 0
+for (model in models){
+  i = i + 1
+  preds <- predict(model, data_test)
+  rmses[i] <- RMSE(
+    pred = preds,
+    obs = data_test$salary
+)
+}
+# for model 10, comparing to 28657.84 RMSE in training data. 
+# the RMSE 29507 is not very large indicating there is not very heavy over fitting problem
+print(rmses)
+
 
 ```
+
 
 
