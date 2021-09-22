@@ -42,7 +42,7 @@ The variables that had a significant impact on salary were expirience in a speci
 
 4.  Population of the state has positive effects on average salary. People in a state with 1 million more people averagely earn $383 more.
 
-As we added variables to our model, the RMSE and the R-squared improved in both out train and test data. The performance of final model RMSE on train data: 28801. RMSE on test data: 28398. The fact that these numbers are not too different gives us confidence that we did not overfit our data but still space to improve. Furthermore, the R Squared on train data is 42.30% and the R Squared on the test is data 44.23%, which is also not a large difference. It makes sense that our train data R Squared is lower, as it was run on a smaller sample. 
+As we added variables to our model, the RMSE and the R-squared improved in both out train and test data. The performance of final model RMSE on train data: 28801. RMSE on test data: 28398. The fact that these numbers are not too different gives us confidence that we did not overfit our data but still space to improve. Furthermore, the R Squared on train data is 42.30% and the R Squared on the test is data 44.23%, which is also not a large difference. 
 
 
 
