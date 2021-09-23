@@ -32,7 +32,7 @@ Regression & Results on Test data:
 
 When working on our regression model, we tested various variables to try and determine which ones could explain salary levels with the greatest accuracy. When adding and eliminating variable, we had the following observations:
 
-The variables that had a significant impact on salary were expirience in a specific field, industry type (data related jobs, etc.), race, and population of the state in which the respondent lives in. By taking these into account, we created a model with an adjusted r-squared of circa 42%. This means that the variables imputed in the model explains 42% the porportion of variability in annual salaries of the respondents.
+The variables that had a significant impact on salary were experience in a specific field, industry type (data related jobs, etc.), race, and population of the state in which the respondent lives in. By taking these into account, we created a model with an adjusted r-squared of circa 42%. This means that the variables imputed in the model explains 42% the proportion of variability in annual salaries of the respondents.
 
 1.  Experience in a specific field explains more variance of salaries than the variables of age and the years of professional experience in total.
 
