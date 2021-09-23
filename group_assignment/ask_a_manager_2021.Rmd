@@ -3,18 +3,24 @@ title: "Ask A Manager 2021"
 author: "Group 5 MAM"
 date: "2021-09-16"
 output: html_document
+html_document:
+    theme: flatly
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+    code_folding: show
 ---
 
 ```{r, setup, echo=FALSE}
 knitr::opts_chunk$set(
-  message = FALSE, 
-  warning = FALSE, 
+  message = FALSE,
+  warning = FALSE,
   tidy=FALSE)     # display code as typed
 options(digits = 3)
 
 # default figure size
 knitr::opts_chunk$set(
-  fig.width=6.75, 
+  fig.width=6.75,
   fig.height=6.75,
   fig.align = "center"
 )
@@ -22,7 +28,7 @@ knitr::opts_chunk$set(
 
 ```{r load-libraries, echo=FALSE, warning=FALSE}
 library(tidyverse)
-library(janitor) 
+library(janitor)
 library(skimr)
 library(countrycode) # to clean up country names
 library(broom)
@@ -58,7 +64,7 @@ skimr::skim(ask_a_manager_2021)
 
 ```
 
-# Data cleaning (exchange rate: Alex)
+# Data cleaning
 
 After skimming the dataset, we took the below steps to clean the raw data :
 
@@ -73,7 +79,7 @@ After skimming the dataset, we took the below steps to clean the raw data :
 
 ```{r remove-na}
 # remove the NA values and 0 salaries
-ask_a_manager_2021 <- ask_a_manager_2021 %>% 
+ask_a_manager_2021 <- ask_a_manager_2021 %>%
   filter(!gender %in% c("NA","Other or prefer not to answer","Prefer not to answer", "Non-binary", NA) &
            race!="NA" &
            highest_level_of_education_completed!="NA"&
@@ -104,11 +110,11 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
 
 ```{r}
 # there are people under 18 having more than 18 years of experience
-ask_a_manager_2021 %>% 
-  filter(age_group=="under 18") %>% 
+ask_a_manager_2021 %>%
+  filter(age_group=="under 18") %>%
   select(c("age_group","overall_years_of_professional_experience"))
 
-ask_a_manager_2021 <- ask_a_manager_2021 %>% 
+ask_a_manager_2021 <- ask_a_manager_2021 %>%
   mutate(max_age = case_when(how_old_are_you=="under 18"~18,
                              how_old_are_you=="65 or over"~999,
                              T~as.numeric(substr(how_old_are_you,4,5))),
@@ -116,9 +122,9 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
          min_exp = if_else(parse_number(overall_years_of_professional_experience)>
                        parse_number(years_of_experience_in_field),
                        parse_number(overall_years_of_professional_experience),
-                       parse_number(years_of_experience_in_field))) %>% 
+                       parse_number(years_of_experience_in_field))) %>%
   # delete the problematic entries and the tow columns created here.
-  filter(max_age>=min_exp) %>% 
+  filter(max_age>=min_exp) %>%
   select(-c("max_age","min_exp"))
 
 ```
@@ -128,18 +134,18 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
 We observe there are only 2 samples under 18 years old correctly entered their data, so we remove them to make analysis between age groups possible.
 
 ```{r}
-ask_a_manager_2021 %>% 
-  group_by(how_old_are_you, gender) %>% 
-  summarise(count=n()) %>% 
+ask_a_manager_2021 %>%
+  group_by(how_old_are_you, gender) %>%
+  summarise(count=n()) %>%
   ggplot(aes(x=fct_relevel(how_old_are_you,levels=c("under 18","18-24","25-34","35-44","45-54","55-64","65 or over")),y=count))+
   geom_col()+
   labs(title="Sample size in age groups",
        x="Age Group",
        y="number of samples")+
   NULL
-  
 
-ask_a_manager_2021 <- ask_a_manager_2021 %>% 
+
+ask_a_manager_2021 <- ask_a_manager_2021 %>%
   filter(how_old_are_you!="under 18")
 ```
 
@@ -148,7 +154,7 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
 Namely, we want to make age, years of working experience, education into `factor`, and take the log of salary for the next step of EDA.
 
 ```{r, warning=FALSE}
-ask_a_manager_2021 <- ask_a_manager_2021 %>% 
+ask_a_manager_2021 <- ask_a_manager_2021 %>%
   mutate(
     country = countrycode::countryname(country),
     age_group = factor(how_old_are_you,levels=c("18-24","25-34","35-44","45-54","55-64","65 or over")),
@@ -159,7 +165,7 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
     salary = annual_salary,
     # take ln() to annual salary
     log_salary = log(annual_salary)
-  ) %>% 
+  ) %>%
   janitor::clean_names() # clean columns names
 ```
 
@@ -170,13 +176,13 @@ Since there are over 1000 reported industries in the dataset, we will only keep 
 ```{r select top industry, warning=FALSE}
 # Industry is messy... it has > 1000 different industries.
 # we only keep the names of top 25 industries. (24597(92%) out of 26765 entries)
-industry_list <- ask_a_manager_2021 %>% 
-  count(industry, sort=TRUE) %>% 
-  mutate(percent = 100* n/sum(n)) %>% 
-  slice_max(order_by = n, n = 25) %>% 
+industry_list <- ask_a_manager_2021 %>%
+  count(industry, sort=TRUE) %>%
+  mutate(percent = 100* n/sum(n)) %>%
+  slice_max(order_by = n, n = 25) %>%
   select(industry)
 
-ask_a_manager_2021 <- ask_a_manager_2021 %>% 
+ask_a_manager_2021 <- ask_a_manager_2021 %>%
   mutate(industry = ifelse(industry %in% industry_list$industry,
                            industry,
                            "Others"))
@@ -210,12 +216,12 @@ currencies_preserved <- tibble(
 
 ```
 
-Here we create a new column called `converted_salary` which converts the 5 most common currencies in USD. These are then rounded to the nearest whole number. 
+Here we create a new column called `converted_salary` which converts the 5 most common currencies in USD. These are then rounded to the nearest whole number.
 
 ```{r}
-#the values are taken from the currencies_preserved$value as to preserve the analysis when 
+#the values are taken from the currencies_preserved$value as to preserve the analysis when
 # getSymbols will no longer work. The index matches the currency pair.
-ask_a_manager_2021 <- ask_a_manager_2021 %>% 
+ask_a_manager_2021 <- ask_a_manager_2021 %>%
   mutate(converted_salary = case_when(
     currency == "GBP" ~ round(annual_salary*currencies_preserved$value[3]),
     currency == "AUD/NZD" & country == "Australia" ~ round(annual_salary*currencies_preserved$value[4]),
@@ -230,7 +236,7 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
 ```{r}
 #Here we filter the dataset to only include the salaries that were converted into USD terms. The other currencies also included lots of outliers which we also get rid of here.
 
-ask_a_manager_2021 <- ask_a_manager_2021 %>% 
+ask_a_manager_2021 <- ask_a_manager_2021 %>%
   filter(currency %in% c("USD","GBP","AUD/NZD","EUR","CAD") &
            !is.na(country))
 
@@ -243,65 +249,65 @@ ask_a_manager_2021 %>%
 
 ## Counts
 
-```{r, fig.width=3}
+```{r, fig.width=3, eval=FALSE}
 # Some quick counts, groups, etc
-ask_a_manager_2021 %>% 
-  count(age_group, sort=TRUE) %>% 
-  mutate(percent = 100* n/sum(n)) %>% 
+ask_a_manager_2021 %>%
+  count(age_group, sort=TRUE) %>%
+  mutate(percent = 100* n/sum(n)) %>%
   ggplot(aes(x=fct_relevel(age_group,levels=c("under 18","18-24","25-34","35-44","45-54","55-64","65 or over")), y=n)) +
-  geom_bar(stat="identity") + 
+  geom_bar(stat="identity") +
   labs(title = "Age distribution of Ask a Manager survey respondents",
        x="Age group",
        y="Frequency",                                                  
        caption = "Source:Askamanager.com")
 
-# 'country' 
+# 'country'
 ask_a_manager_2021 %>%
-  count(country, sort=TRUE) %>% 
-  mutate(percent = 100* n/sum(n)) %>% 
+  count(country, sort=TRUE) %>%
+  mutate(percent = 100* n/sum(n)) %>%
   head()
 
-# 'city' 
-ask_a_manager_2021 %>% 
-  count(city, sort=TRUE) %>% 
-  mutate(percent = 100* n/sum(n)) %>% 
+# 'city'
+ask_a_manager_2021 %>%
+  count(city, sort=TRUE) %>%
+  mutate(percent = 100* n/sum(n)) %>%
   head()
 
-# education 
-ask_a_manager_2021 %>% 
-  count(education) %>% 
-  mutate(percent = 100* n/sum(n))%>% 
+# education
+ask_a_manager_2021 %>%
+  count(education) %>%
+  mutate(percent = 100* n/sum(n))%>%
   arrange(desc(percent))
 
 # gender
-ask_a_manager_2021 %>% 
-  count(gender) %>% 
-  mutate(percent = 100* n/sum(n))%>% 
+ask_a_manager_2021 %>%
+  count(gender) %>%
+  mutate(percent = 100* n/sum(n))%>%
   arrange(desc(percent))
 
 # race
-ask_a_manager_2021 %>% 
-  count(race) %>% 
-  mutate(percent = 100* n/sum(n))%>% 
-  arrange(desc(percent)) %>% 
+ask_a_manager_2021 %>%
+  count(race) %>%
+  mutate(percent = 100* n/sum(n))%>%
+  arrange(desc(percent)) %>%
   head()
 
-# pro_exp 
-ask_a_manager_2021 %>% 
-  count(pro_exp ) %>% 
-  mutate(percent = 100* n/sum(n))%>% 
+# pro_exp
+ask_a_manager_2021 %>%
+  count(pro_exp ) %>%
+  mutate(percent = 100* n/sum(n))%>%
   arrange(desc(percent))
 
 # field_exp  
-ask_a_manager_2021 %>% 
-  count(field_exp) %>% 
-  mutate(percent = 100* n/sum(n))%>% 
+ask_a_manager_2021 %>%
+  count(field_exp) %>%
+  mutate(percent = 100* n/sum(n))%>%
   arrange(desc(percent))
 
-#make comments about the counts 
+#make comments about the counts
 ```
 
-## Salary (Yuan)
+## Salary
 
 How is salary distributed?
 
@@ -314,7 +320,7 @@ g1 <- ggplot(ask_a_manager_2021, aes(x=salary))+
   geom_density()+
   NULL
 #cdf
-g2 <- ask_a_manager_2021 %>% 
+g2 <- ask_a_manager_2021 %>%
   slice_min(order_by = salary,n =nrow(ask_a_manager_2021)-5) %>% # choose a number
   ggplot(aes(x=salary))+
   stat_ecdf()+
@@ -325,7 +331,7 @@ g3 <- ggplot(ask_a_manager_2021, aes(x=log(salary)))+
   geom_density()+
   NULL
 
-g4 <- ask_a_manager_2021 %>% 
+g4 <- ask_a_manager_2021 %>%
   slice_min(order_by = salary,n =nrow(ask_a_manager_2021)-5) %>% # choose a number
   ggplot(aes(x=log(salary)))+
   stat_ecdf()+
@@ -334,13 +340,13 @@ g4 <- ask_a_manager_2021 %>%
 gridExtra::grid.arrange(g1,g2,g3,g4)
 ```
 
-Observation: This is a right skewed distribution. 
+Observation: This is a right skewed distribution.
 
-## Industry (Yuan)
+## Industry
 
 ```{r}
-ask_a_manager_2021 %>% 
-  count(industry, sort=TRUE) %>% 
+ask_a_manager_2021 %>%
+  count(industry, sort=TRUE) %>%
   ggplot(aes(y=fct_reorder(industry,n), x=n))+
   geom_col()
 
@@ -351,22 +357,22 @@ Observations:
 - Computing & tech is the top-chosen industry among respondents, followed by Education and Non-profit
 - This indicate that the sample might include more respondents from industries have higher exposure to tech and internet.
 
-## Salary ,Gender and Industry (Yuan)
+## Salary ,Gender and Industry
 
 We are interested in the type of industries with top salary for man and woman.
 
 ```{r, fig.width=5}
 # Industries of top average salary for Man and Woman
-salary_table <- ask_a_manager_2021 %>% 
-  group_by(industry, gender) %>% 
+salary_table <- ask_a_manager_2021 %>%
+  group_by(industry, gender) %>%
   summarise(count = n(),
             avg_salary = mean(converted_salary),
-            higher_edu_prop = sum(higher_edu)/n()) %>% 
+            higher_edu_prop = sum(higher_edu)/n()) %>%
   pivot_wider(id_cols = 1:5,
               names_from = gender,
               values_from = count:higher_edu_prop)
-  
-g_man <- salary_table %>% 
+
+g_man <- salary_table %>%
   ggplot(aes(y=fct_reorder(industry,avg_salary_Man), x=avg_salary_Man,fill=higher_edu_prop_Man))+
   geom_bar(position="dodge", stat="identity")+
   geom_text(aes(label=paste(avg_salary_Man%/%1000,"k")),
@@ -384,8 +390,9 @@ g_man <- salary_table %>%
         legend.title=element_text(size=13))+
   NULL
 
-ggsave("highest_paid_industries_male.png",width = 12,height = 8,limitsize = F)
-g_woman <- salary_table %>% 
+# ggsave("highest_paid_industries_male.png",width = 12,height = 8,limitsize = F)
+
+g_woman <- salary_table %>%
   ggplot(aes(y=fct_reorder(industry,avg_salary_Woman), x=avg_salary_Woman,fill=higher_edu_prop_Woman))+
   geom_bar( position="dodge", stat="identity")+
   geom_text(aes(label=paste(avg_salary_Woman%/%1000,"k")),
@@ -403,8 +410,7 @@ g_woman <- salary_table %>%
         legend.title=element_text(size=13))+
   NULL
 
-
-ggsave("highest_paid_industries_female.png",width = 12,height = 8,limitsize = F)
+# ggsave("highest_paid_industries_female.png",width = 12,height = 8,limitsize = F)
 
 ```
 
@@ -418,21 +424,21 @@ We are also interested in the salary difference between man and woman within the
 
 ```{r salary_gap_by_industry}
 # salary gap in different industries
-ask_a_manager_2021 %>% 
-  group_by(industry, gender) %>% 
+ask_a_manager_2021 %>%
+  group_by(industry, gender) %>%
   summarise(count = n(),
-            avg_salary = mean(converted_salary)) %>% 
+            avg_salary = mean(converted_salary)) %>%
   pivot_wider(id_cols = 1:4,
               names_from = gender,
-              values_from = count:avg_salary) %>% 
+              values_from = count:avg_salary) %>%
   mutate(size = count_Man+count_Woman,
          male_prop = count_Man/(count_Man+count_Woman),
-         salary_gap = avg_salary_Man - avg_salary_Woman) %>% 
+         salary_gap = avg_salary_Man - avg_salary_Woman) %>%
   ggplot(aes(y=fct_reorder(industry,salary_gap), x=salary_gap,fill=male_prop))+
   geom_col()+
-  
+
   # geom_point(aes(y=fct_reorder(industry,size),x=size*10))+
-  
+
   scale_x_continuous(
     breaks = seq(-20000,40000,5000)
   ) +
@@ -448,7 +454,7 @@ ask_a_manager_2021 %>%
         legend.title=element_text(size=13))+
   NULL
 
-ggsave("salary_gap.png",width = 12,height = 8,limitsize = F)
+# ggsave("salary_gap.png",width = 12,height = 8,limitsize = F)
 
 ```
 
@@ -459,21 +465,21 @@ Observations:
 - The proportion of male within computing or tech is significantly higher than that within other industries; yet the proportion only reaches c. 40%, reflecting the fact that most respondents are female because Ask_a_manager is more popular among women
 - The proportion of male is also higher in labour-intensive industries such as transport or logistics, engineering, utilities & telecommunications
 
-## Education (Jean)
+## Education
 
 Next, we want to see if there is a difference in the salary gap between man and woman for different education level.
 
 ```{r salary_gap_by_education}
-ask_a_manager_2021 %>% 
-  group_by(education, gender) %>% 
+ask_a_manager_2021 %>%
+  group_by(education, gender) %>%
   summarise(count = n(),
-            avg_salary = mean(converted_salary)) %>% 
+            avg_salary = mean(converted_salary)) %>%
   pivot_wider(id_cols = 1:4,
               names_from = gender,
-              values_from = count:avg_salary) %>% 
+              values_from = count:avg_salary) %>%
   mutate(size = count_Man+count_Woman,
          male_prop = count_Man/(count_Man+count_Woman),
-         salary_gap = avg_salary_Man - avg_salary_Woman) %>% 
+         salary_gap = avg_salary_Man - avg_salary_Woman) %>%
   ggplot(aes(x=education, y=salary_gap,fill=male_prop))+
   geom_col()+
   scale_y_continuous(
@@ -483,23 +489,23 @@ ask_a_manager_2021 %>%
   theme_wsj()+
   theme(legend.position="bottom", axis.title=element_text(size=24))+
   ggtitle("Salary Gap at Different Education level") +
-  xlab("Education Level") + ylab ("Salary Gap in $") + 
+  xlab("Education Level") + ylab ("Salary Gap in $") +
   NULL
 
-ggsave("salary_gap_by_edu.png",width = 14,height = 8,limitsize = F)
+# ggsave("salary_gap_by_edu.png",width = 14,height = 8,limitsize = F)
 
 ```
 
 
 ```{r Education_salary, warning=FALSE, echo=FALSE}
 
-ask_a_manager_2021 %>% 
-  filter(gender %in% c("Man", "Woman")) %>% 
-  mutate(sex = factor (gender, labels = c("Man", "Woman"))) %>% 
-  rename(Education = education) %>% 
-  group_by(Education, gender) %>% 
+ask_a_manager_2021 %>%
+  filter(gender %in% c("Man", "Woman")) %>%
+  mutate(sex = factor (gender, labels = c("Man", "Woman"))) %>%
+  rename(Education = education) %>%
+  group_by(Education, gender) %>%
   summarise (median_salary_by_edu = median (converted_salary),
-             mean_salary_by_edu = mean(converted_salary), ) %>% 
+             mean_salary_by_edu = mean(converted_salary), ) %>%
   ggplot () +
   geom_col(aes (Education, median_salary_by_edu, fill = gender), position = position_dodge(width = 0.9), alpha = 0.7)+
 #Removed the section which broke the code
@@ -510,31 +516,31 @@ ask_a_manager_2021 %>%
 ```
 
 
-## Race (Clara)
+## Race
 
-### Count 
+### Count
 ```{r}
-ask_a_manager_2021 %>% 
-  group_by(race) %>% 
-  filter(n() > 500) %>% 
-  summarise(count=n()) %>% 
+ask_a_manager_2021 %>%
+  group_by(race) %>%
+  filter(n() > 500) %>%
+  summarise(count=n()) %>%
   ggplot(aes(y=count, x=race, fill=race))+
   geom_col() +
   theme_wsj()+
   theme(legend.position = "none") +
   labs(x="Race", y="Count", title="Count by Race", subtitle = "Races with > 500 Respondents")+
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
   NULL
 ```
 
 
-### Race and Mean Salary 
+### Race and Mean Salary
 
 ```{r}
-ask_a_manager_2021 %>% 
-  filter(industry %in% industry_list$industry) %>% 
-  group_by(race) %>% 
-  filter(n() > 500) %>% 
+ask_a_manager_2021 %>%
+  filter(industry %in% industry_list$industry) %>%
+  group_by(race) %>%
+  filter(n() > 500) %>%
  ggplot( aes(x=race, y=converted_salary, color=race)) +
     geom_jitter(color="black", size=0.01, alpha=0.9) +
    geom_boxplot(alpha=0.4) +
@@ -552,31 +558,33 @@ ask_a_manager_2021 %>%
     scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
     scale_y_continuous(labels = scales::comma, limits = c(0, 300000)) +
     NULL
-  
+
 ```
 
 Observation:
-In our boxplot one can visualize both the distribution of the data and the medium and interquartile ranges of the data. When comparing annual salary by race, our data shows that Asians have the higher salaries in comparison to Black and African American and White sample respondents. Interestingly enough, our sample also shows that the medium salary for Black and AA respondents is higher than that of White respondents. 
 
-Since most repondents were white, the larger sample size is less prone to skewness due to outliers when comparing it to the other two races portrayed in the plot. 
+- In our boxplot one can visualize both the distribution of the data and the medium and interquartile ranges of the data. When comparing annual salary by race, our data shows that Asians have the higher salaries in comparison to Black and African American and White sample respondents. Interestingly enough, our sample also shows that the medium salary for Black and AA respondents is higher than that of White respondents.
+
+- Since most repondents were white, the larger sample size is less prone to skewness due to outliers when comparing it to the other two races portrayed in the plot.
 
 ```{r}
 
 ask_a_manager_2021_race <- ask_a_manager_2021 %>%
-  group_by(race) %>% 
-  filter(race %in% c("Black or African American", "White")) 
+  group_by(race) %>%
+  filter(race %in% c("Black or African American", "White"))
 
 t.test(salary ~ race, data = ask_a_manager_2021_race)
 
 ```
-When running a T-test on the two racial groups, White and Black or African American, the P-value we get is 0.9. Thus there is no statistically signifcant difference in their annual salary when calculating it based of off this data set. 
-### Race and Mean Salary 
+When running a T-test on the two racial groups, White and Black or African American, the P-value we get is 0.9. Thus there is no statistically signifcant difference in their annual salary when calculating it based of off this data set.
+
+### Race and Mean Salary
 
 ```{r, echo=FALSE}
 # Remove from presentation
-ask_a_manager_2021 %>% 
-  group_by(race) %>% 
-  filter(n() > 500) %>% 
+ask_a_manager_2021 %>%
+  group_by(race) %>%
+  filter(n() > 500) %>%
   ggplot(aes(y = log(converted_salary), x=race))+
   geom_boxplot() +
   theme_bw()+
@@ -588,15 +596,16 @@ ask_a_manager_2021 %>%
 ```
 
 ## Location (Alex)
+## Location
 
 ```{r}
-#create df of the list of states with >10 occurrences 
+#create df of the list of states with >10 occurrences
 #This allows us to get data for actual states as many data entry errors
 #many individuals put multiple states and this helps to fix that
-states <- ask_a_manager_2021 %>% 
+states <- ask_a_manager_2021 %>%
   group_by(state) %>%
   filter(!is.na(state)) %>%
-  filter(n()>10) %>% 
+  filter(n()>10) %>%
   summarise(mean_salary = mean(salary),
             count_state = count(state))
 
@@ -618,38 +627,47 @@ plot_usmap(data=statesalarymap, values="mean_salary", color="black") + scale_fil
 ```{r}
 # Count by Industry
 
-ask_a_manager_2021 %>% 
-  group_by(industry) %>% 
-  summarise(count=n()) %>% 
+ask_a_manager_2021 %>%
+  group_by(industry) %>%
+  summarise(count=n()) %>%
   ggplot(aes(y=fct_reorder(industry,count),x=count))+
   geom_col()
 
 # null hypothesis: no difference between
 ```
 
+## Age
+
+```{r}
+ask_a_manager_2021 %>%
+  group_by(age_group, gender) %>%
+  summarise(count=n())
+  ggplot(aes(y=fct_reorder(how_old_are_you,count),x=count))+
+  geom_col()
+```
 
 
 ```{r}
 # Count by Age Group
-ask_a_manager_2021 %>% 
-  group_by(age_group) %>% 
-  summarise(count=n()) %>% 
+ask_a_manager_2021 %>%
+  group_by(age_group) %>%
+  summarise(count=n()) %>%
   ggplot(aes(y=fct_reorder(age_group,count),x=count))+
   geom_col()
-# Sorting out the people who are 18+ 
+# Sorting out the people who are 18+
 ask_a_manager_age <- ask_a_manager_2021 %>%  
                     mutate(factor(age_group,levels=c("18-24","25-34","35-44","45-54","55-64","65 or over")))
-     
+
 ```
 ```{r}
 #need to change colors for male and female ?!
 #there are only 6 women in under 18 category so excluding them for the graph
 # since there is no male data in that category to compare
-ask_a_manager_age %>% 
-  filter(age_group %in% c("18-24", "25-34" , "35-44" , "45-54" , "55-64"  )) %>% 
-  group_by(age_group, gender) %>% 
+ask_a_manager_age %>%
+  filter(age_group %in% c("18-24", "25-34" , "35-44" , "45-54" , "55-64"  )) %>%
+  group_by(age_group, gender) %>%
   summarise (median_salary_by_age = median (salary),
-             mean_salary_by_age = mean(salary)) %>% 
+             mean_salary_by_age = mean(salary)) %>%
   ggplot () +
   geom_col(aes (age_group, median_salary_by_age, fill = gender), position = position_dodge(width = 0.9), alpha = 0.7)+
   geom_point(aes(x = age_group, y=mean_salary_by_age, color = gender))+
@@ -659,10 +677,53 @@ ask_a_manager_age %>%
   NULL
 ```
 
+## Changed Industry vs salary
+
+```{r}
+ask_a_manager_2021_changed <- ask_a_manager_2021  %>%
+mutate(if_changed= if_else(overall_years_of_professional_experience == years_of_experience_in_field, "No", "Yes"))
+
+```
+
+
+```{r}
+ask_a_manager_2021_changed %>%
+ggplot(aes(x=fct_relevel(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")), y=annual_salary, color=if_changed))+
+  # scatter plot
+  geom_point(alpha = 0.5)+
+  # linear smooth line
+  geom_smooth(method = "lm")+
+  # legend settings
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+  labs(title="Whether changing job affects your salary",
+       x="Total Years Spent Working",
+       y="Salary")+
+  theme_bw()+
+  NULL
+```
+
+```{r}
+ask_a_manager_2021_changed %>%
+  group_by(overall_years_of_professional_experience, if_changed) %>%
+  summarise (median_salary_over_time = median (salary),
+             mean_salary_over_time = mean(salary)) %>%
+  ggplot () +
+  geom_col(aes (fct_relevel(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")), median_salary_over_time, fill=if_changed), position = position_dodge(width = 0.9), alpha = 0.7)+
+  geom_point(aes(x = overall_years_of_professional_experience, y=mean_salary_over_time, color = if_changed))+
+  theme_bw()+
+  #formatC(x, format = "d")+
+  labs(  title =  "Median Salary over time" , y="Salary" ,x = "Prof") +
+  NULL
+
+ggsave("switch_industry.png",width = 12,height = 8,limitsize = F)
+
+```
+
 # Statistical Tests
 
 
-## Gender vs Salary (Clara)
+## Gender vs Salary
 
 ### General Statistics & Boxplot
 
@@ -673,7 +734,7 @@ mosaic::favstats (converted_salary ~ gender, data=ask_a_manager_2021)
 
 ```{r}
 
-ask_a_manager_2021 %>% 
+ask_a_manager_2021 %>%
   ggplot( aes(x=gender, y=converted_salary, color=gender)) +
     geom_jitter(color="black", size=0.4, alpha=0.9) +
     geom_boxplot(alpha=0.3) +
@@ -689,11 +750,11 @@ ask_a_manager_2021 %>%
     ) +
     theme(axis.title=element_text(size=12))+
     ggtitle("Salary Vs. Gender Boxplot with Jitter") +
-    ylab("Salary") + xlab ("Race") + 
+    ylab("Salary") + xlab ("Race") +
     scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
     scale_y_continuous(labels = scales::comma, limits = c(0, 1000000)) +
     NULL
-  
+
 ```
 
 ***For our following analysis, we will be comparing data from the male gender "Man" with data from the female gender "Woman." We will filter out the data on those that are non binary.***
@@ -707,10 +768,10 @@ ask_a_manager_2021 <- ask_a_manager_2021 %>%
 t.test(converted_salary ~ gender, data = ask_a_manager_2021)
 ```
 
-### Confidence Intervals 
+### Confidence Intervals
 
 ```{r, gender vs. salary confidence intervals}
- 
+
 #mosaic::favstats (annual_salary ~ gender, data=ask_a_manager_2021)
 ask_a_manager_2021_gender <- ask_a_manager_2021 %>%
   mutate(gender2 = case_when(
@@ -727,12 +788,14 @@ mutate(t_critical = qt(0.975,n-1),
          margin_of_error = t_critical*sd_mean,
          ci_lower = mean-margin_of_error,
          ci_higher = mean+margin_of_error)
-# Add graph of two distributions and confidence intervals 
+# Add graph of two distributions and confidence intervals
 ```
 
-Observation: Since two 95% confidence intervals do not overlap, we are at least 95% confident that the male have higher salary than the female on average.
+Observation:
 
-### Bootstrap Test 
+- Since two 95% confidence intervals do not overlap, we are at least 95% confident that the male have higher salary than the female on average.
+
+### Bootstrap Test
 
 ```{r}
 # hypothesis testing using infer package
@@ -749,29 +812,32 @@ salary_in_null_world <- ask_a_manager_2021_gender %>%
    # generate 1000 reps, of type "permute"
   generate(reps = 1000, type = "permute") %>%
   # calculate statistic of difference, namely "diff in means"
-   calculate(stat = "diff in means", order = c("Woman", "Man")) 
+   calculate(stat = "diff in means", order = c("Woman", "Man"))
 
-salary_in_null_world %>% 
+salary_in_null_world %>%
   visualise()+
   shade_p_value(obs_stat = diff, direction = "two-sided")
-  
-p_value <- salary_in_null_world %>% 
+
+p_value <- salary_in_null_world %>%
   get_pvalue(obs_stat = diff, direction="both")
 p_value
 ```
-Observation: Our null hypothesis is that the difference of annual salaries between male and female is 0 and we get a p_value very close to 0. Therefore we reject the null hypothesis with 95% confidence. There is difference between the average male and female salary.
+
+Observation:
+
+- Our null hypothesis is that the difference of annual salaries between male and female is 0 and we get a p_value very close to 0. Therefore we reject the null hypothesis with 95% confidence. There is difference between the average male and female salary.
 
 
-## Gender vs Education (Jean)
+## Gender vs Education
 
 We want to look at the relationship between one's gender and education degree. In essence, we want to explore if there is a difference in the proportion of respondents with high school degree as their highest degree for male group and the female group. We can use the proportion test to generate the result from the male and female sample.
 
 ```{r prop_test_for_gender_education_college}
 
-ask_a_manager_2021_education <- ask_a_manager_2021 %>% 
+ask_a_manager_2021_education <- ask_a_manager_2021 %>%
    filter(gender !="Non-binary") %>%
-   mutate(below_college = if_else(highest_level_of_education_completed %in% c("High School", "Some college"), "Yes", "No")) %>% 
-   group_by(gender) %>% 
+   mutate(below_college = if_else(highest_level_of_education_completed %in% c("High School", "Some college"), "Yes", "No")) %>%
+   group_by(gender) %>%
    summarise(college_below=sum(below_college == "Yes"), college_or_above = sum(below_college == "No"))
 
 ask_a_manager_2021_education
@@ -780,15 +846,17 @@ prop.test(x = c(4030,18584), n = c(4030+687,18584+1598), alternative = "two.side
 
 ```
 
-From the result of proportion test for male group and female group, we are 99% confident that the proportion of high school as highest education level for male is higher than that for female, indicating that overall female has a higher college-entry rate vs. the male.
+Observations:
+
+- From the result of proportion test for male group and female group, we are 99% confident that the proportion of high school as highest education level for male is higher than that for female, indicating that overall female has a higher college-entry rate vs. the male.
 
 If we repeat the process to explore the difference in proportion in acquiring a masters or above degree for both gender:
 
 ```{r prop_test_for_gender_education_master}
-ask_a_manager_2021_education <- ask_a_manager_2021 %>% 
+ask_a_manager_2021_education <- ask_a_manager_2021 %>%
   filter(gender !="Non-binary") %>%
-  mutate(higher_edu = if_else(highest_level_of_education_completed %in% c("Master's degree", "Professional degree (MD, JD, etc.)", "PhD"), "Yes", "No")) %>% 
-  group_by(gender) %>% 
+  mutate(higher_edu = if_else(highest_level_of_education_completed %in% c("Master's degree", "Professional degree (MD, JD, etc.)", "PhD"), "Yes", "No")) %>%
+  group_by(gender) %>%
   summarise(master_below = sum(higher_edu == "No"), master_or_above=sum(higher_edu == "Yes") )
 
 
@@ -799,22 +867,25 @@ prop.test(x = c(1654, 8922), n = c(1654+3063, 8922+11260), alternative = "two.si
 
 ```
 
-From the result of two proportion tests, we can see that even though the proportion of acquiring a college-or-above degree is less in the male group, the proportion of acquiring higher education degree (Master's-or-above) is higher than the female group. This somehow explains the fact that there are more outliers in male sample with extremely high income level.
+Observations:
 
-## Race vs Salary (Raina)
+- From the result of two proportion tests, we can see that even though the proportion of acquiring a college-or-above degree is less in the male group, the proportion of acquiring higher education degree (Master's-or-above) is higher than the female group
+- This somehow explains the fact that there are more outliers in male sample with extremely high income level
+
+## Race vs Salary
 
 Here we want to see if race is affecting the salary.
 
 ```{r t_test_for_race_education}
-ask_a_manager_salary <- ask_a_manager_2021 %>% 
-  mutate(if_white = if_else(race == "White", "Yes", "No")) %>% 
+ask_a_manager_salary <- ask_a_manager_2021 %>%
+  mutate(if_white = if_else(race == "White", "Yes", "No")) %>%
   select(if_white,salary)
+
 t.test(salary~if_white, data = ask_a_manager_salary, success = "Yes")
 ```
 
-> wisely choose the race. like white vs. not white
 
-## Race vs Education (Jean)
+## Race vs Education
 
 We want to look at the relationship between one's race and education degree. Particularly, we want to see if there is a difference in education level for those being white and those being non-white.
 
@@ -822,10 +893,10 @@ As the above analysis for gender vs. education, we run two proportion tests for 
 
 ```{r prop_test_for_race_education_college}
 
-ask_a_manager_2021_race <- ask_a_manager_2021 %>% 
+ask_a_manager_2021_race <- ask_a_manager_2021 %>%
   mutate(if_white = if_else(race == "White", "White", "Non-white"),
-         below_college = if_else(highest_level_of_education_completed %in% c( "High School", "Some college"), "Yes", "No")) %>% 
-  group_by(if_white) %>% 
+         below_college = if_else(highest_level_of_education_completed %in% c( "High School", "Some college"), "Yes", "No")) %>%
+  group_by(if_white) %>%
   summarise(college_below=sum(below_college == "Yes"), college_or_above = sum(below_college == "No"))
 
 ask_a_manager_2021_race
@@ -837,10 +908,10 @@ prop.test(x = c(3510,19104), n = c(3510+350, 19104+1935), alternative = "two.sid
 Similarly, if we run the test for the propotion of master_or_above education level between white and non-white races:
 
 ```{r prop_test_for_race_education_master}
-ask_a_manager_2021_race <- ask_a_manager_2021 %>% 
+ask_a_manager_2021_race <- ask_a_manager_2021 %>%
   mutate(if_white = if_else(race == "White", "White", "Non-white"),
-         higher_edu = if_else(highest_level_of_education_completed %in% c("Master's degree", "Professional degree (MD, JD, etc.)", "PhD"), "Yes", "No")) %>% 
-  group_by(if_white) %>% 
+         higher_edu = if_else(highest_level_of_education_completed %in% c("Master's degree", "Professional degree (MD, JD, etc.)", "PhD"), "Yes", "No")) %>%
+  group_by(if_white) %>%
   summarise(master_below = sum(higher_edu == "No"), master_or_above=sum(higher_edu == "Yes") )
 
 ask_a_manager_2021_race
@@ -848,6 +919,7 @@ ask_a_manager_2021_race
 prop.test(x = c(1513, 9063), n = c(1513+2347, 9063+11976), alternative = "two.sided")
 
 ```
+Observations:
 
 From the result of the proportion test, we cannot see a clear difference between the proportion of education level in white and non-white group, as the p-value is higher than 5%.
 
@@ -864,7 +936,7 @@ mutate(if_changed= if_else(overall_years_of_professional_experience == years_of_
 
 
 ```{r}
-ask_a_manager_2021_changed %>% 
+ask_a_manager_2021_changed %>%
 ggplot(aes(x=fct_relevel(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")), y=annual_salary, color=if_changed))+
   # scatter plot
   geom_point(alpha = 0.5)+
@@ -880,23 +952,12 @@ ggplot(aes(x=fct_relevel(overall_years_of_professional_experience,levels=c("1 ye
   NULL
 ```
 
+- From the result of the proportion test, we cannot see a clear difference between the proportion of education level in white and non-white group, as the p-value is higher than 5%.
 
-```{r}
-ask_a_manager_2021_changed %>% 
-  group_by(overall_years_of_professional_experience, if_changed) %>% 
-  summarise (median_salary_over_time = median (salary),
-             mean_salary_over_time = mean(salary)) %>% 
-  ggplot () +
-  geom_col(aes (fct_relevel(overall_years_of_professional_experience,levels=c("1 year or less","2 - 4 years","5-7 years","8 - 10 years","11 - 20 years","21 - 30 years","31 - 40 years","41 years or more")), median_salary_over_time, fill=if_changed), position = position_dodge(width = 0.9), alpha = 0.7)+
-  geom_point(aes(x = overall_years_of_professional_experience, y=mean_salary_over_time, color = if_changed))+
-  theme_bw()+
-  #formatC(x, format = "d")+
-  labs(  title =  "Median Salary over time" , y="Salary" ,x = "Prof") +
-  NULL
+- However, the proportion of acquiring higher education degree (Master’s-or-above) is higher in the white group vs. other races
 
-ggsave("switch_industry.png",width = 12,height = 8,limitsize = F)
 
-```
+## Changed Industry vs salary
 
 
 ```{r}
@@ -904,11 +965,11 @@ t.test(salary~if_changed, data = ask_a_manager_2021_changed)
 
 
 prop.test(~if_changed, data = ask_a_manager_2021_changed, success = "Yes")
-ask_a_manager_age %>% 
-  filter(age_group %in% c("18-24", "25-34" , "35-44" , "45-54" , "55-64"  )) %>% 
-  group_by(age_group, gender) %>% 
+ask_a_manager_age %>%
+  filter(age_group %in% c("18-24", "25-34" , "35-44" , "45-54" , "55-64"  )) %>%
+  group_by(age_group, gender) %>%
   summarise (median_salary_by_age = median (salary),
-             mean_salary_by_age = mean(salary)) %>% 
+             mean_salary_by_age = mean(salary)) %>%
   ggplot () +
   geom_col(aes (age_group, median_salary_by_age, fill = gender), position = position_dodge(width = 0.9), alpha = 0.7)+
   geom_point(aes(x = age_group, y=mean_salary_by_age, color = gender))+
@@ -919,26 +980,26 @@ ask_a_manager_age %>%
 ```
 
 
-# Regression Analysis (Yuan)
+# Regression Analysis
 
 ```{r}
 
 # load population data of US
 population_url <- "https://www.ers.usda.gov/webdocs/DataFiles/48747/PopulationEstimates.csv?v=2232"
-population <- vroom(population_url) %>% 
-  janitor::clean_names() %>% 
-  
+population <- vroom(population_url) %>%
+  janitor::clean_names() %>%
+
   # select the latest data, namely 2019
-  select(fips = fip_stxt, state= area_name, pop_estimate_2019) %>% 
-  group_by(state) %>% 
+  select(fips = fip_stxt, state= area_name, pop_estimate_2019) %>%
+  group_by(state) %>%
   summarise(pop_estimate_2019_m = sum(pop_estimate_2019)/1000000)
 
-reg_data <- ask_a_manager_2021 %>% 
+reg_data <- ask_a_manager_2021 %>%
   filter(!is.na(state)&industry %in% industry_list$industry[1:15]) %>%
   group_by(state) %>%
-  filter(n()>10) %>% 
-  ungroup() %>% 
-  filter(country =="US"&currency=="USD") %>% 
+  filter(n()>10) %>%
+  ungroup() %>%
+  filter(country =="US"&currency=="USD") %>%
   mutate(job = tolower(job_title),
          research=grepl("research", job),
          manager=grepl("manager", job),
@@ -954,8 +1015,8 @@ reg_data <- ask_a_manager_2021 %>%
                            race=="Asian or Asian American"~"Asian",
                            race=="Black or African American"~"Black",
                            T~"Others"),
-         ) %>% 
-  left_join(population,by = c("state")) %>% 
+         ) %>%
+  left_join(population,by = c("state")) %>%
   select(c("age_group","gender","education","field_exp","pro_exp","race",
            "salary","research","manager","engineer","industry","analyst",
            "data_related","scientist","database","librarian","add_context_job",
@@ -970,14 +1031,14 @@ m2 <- lm(salary ~ pro_exp, data=data_train)
 m3 <- lm(salary ~ field_exp, data=data_train)
 
 huxreg(m1, m2, m3,
-       statistics = c('#observations' = 'nobs', 
-                      'R squared' = 'r.squared', 
-                      'Adj. R Squared' = 'adj.r.squared', 
+       statistics = c('#observations' = 'nobs',
+                      'R squared' = 'r.squared',
+                      'Adj. R Squared' = 'adj.r.squared',
                       'Residual SE' = 'sigma',
-                      "AIC" = "AIC"), 
-       bold_signif = 0.05, 
+                      "AIC" = "AIC"),
+       bold_signif = 0.05,
        stars = NULL
-) %>% 
+) %>%
   set_caption('Comparison of models (age or experience?)')
 ```
 
@@ -994,13 +1055,13 @@ m10 <- lm(salary ~ field_exp+gender+gender*field_exp+education+race+pop_estimate
 m11 <- lm(salary ~ field_exp+gender+gender*field_exp+education+race+pop_estimate_2019_m++research+manager+engineer+industry+data_related+scientist+database+librarian+add_context_job+add_context_inc+data_related*scientist, data=data_train)
 
 huxreg(m4, m5, m6, m7, m8, m9,m10,m11,
-       statistics = c('#observations' = 'nobs', 
-                      'R squared' = 'r.squared', 
-                      'Adj. R Squared' = 'adj.r.squared', 
+       statistics = c('#observations' = 'nobs',
+                      'R squared' = 'r.squared',
+                      'Adj. R Squared' = 'adj.r.squared',
                       'Residual SE' = 'sigma',
-                      "AIC" = "AIC"), 
+                      "AIC" = "AIC"),
        bold_signif = 0.05
-) %>% 
+) %>%
   set_caption('Comparison of models (adding variables)')
 
 # calculate rmse on test set of 11 models
@@ -1017,23 +1078,19 @@ for (model in models){
     )
   print(paste("RMSE on train data:",summary(model)$sigma))
   print(paste("RMSE on test data:", rmses[i]))
-  
+
   SS.total      <- with(data_test,sum((salary-mean(salary))^2))
   #SS.residual   <- sum(residuals(model)^2)
   SS.regression <- sum((preds-mean(data_test$salary))^2)
   #SS.total - (SS.regression+SS.residual)
-  
+
   print(paste("R Squared on train data", summary(model)$r.squared))     
   print(paste("R Squared on test data", SS.regression/SS.total))  # fraction of variation explained by the model
-  
+
 }
 
-# for model 10, comparing to 28657.84 RMSE in training data. 
+# for model 10, comparing to 28657.84 RMSE in training data.
 # the RMSE 29507 is not very large indicating there is not very heavy over fitting problem
 
 
 ```
-
-
-
-
