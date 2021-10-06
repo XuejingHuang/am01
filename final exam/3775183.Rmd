@@ -1,0 +1,29 @@
+---
+title: "Final Exam"
+author: "GAO Yuan"
+date: "24/09/2021"
+output: pdf_document
+---
+
+
+```{r}
+hotel_bookings %>% 
+  
+```
+
+```{r}
+library(gapminder)
+library(tidyverse)
+gapminder %>% 
+  group_by(continent) %>% 
+  summarise(pop_conti = sum(pop)) %>% 
+  mutate(contri = pop_conti/sum(pop_conti),
+         cont = n())
+  
+```
+
+```{r}
+gapminder %>% 
+  group_by(continent)
+```
+
